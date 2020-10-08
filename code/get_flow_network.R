@@ -11,8 +11,6 @@
 library(sf)
 library(nhdplusTools)
 library(tidyverse)
-library(mapview)
-mapviewOptions(fgb=FALSE)
 
 # Identify the COMID ------------------------------------------------------
 
@@ -78,13 +76,23 @@ output_file_download <-subset_nhdplus(comids = lshasta_um$nhdplus_comid,
                                       nhdplus_data = "download", return_data = FALSE)
 
 
+st_write(lshasta_ut, dsn="data/nhdplus_little_shasta.gpkg", layer = "flowlines_ut_lshasta",
+         layer_options = "OVERWRITE=YES", delete_layer = TRUE)
+
+
 # READ IN DATA AND CHECK --------------------------------------------------
 
 # see what layers
 sf::st_layers("data/nhdplus_little_shasta.gpkg")
 
-# this explains attributes:
+# this explains NHD attributes:
 # https://s3.amazonaws.com/edap-nhdplus/NHDPlusV21/Data/NationalData/0Release_Notes_NationalData_Seamless_GeoDatabase.pdf
+
+
+# QUICK PLOTS -------------------------------------------------------------
+
+library(mapview)
+mapviewOptions(fgb=FALSE)
 
 # read data in: flowlines
 flowlines <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "NHDFlowline_Network")
@@ -99,3 +107,6 @@ plot(lshasta_ut$geometry, lwd = 1.2, col = "dodgerblue", add = TRUE)
 mapview(catchment, color="gray50", col.regions="gray50", alpha.regions=0, alpha=0.5, lwd=2) +
   mapview(flowlines, zcol="ftype") +
   mapview(lshasta_ut, color="dodgerblue", lwd=0.75, alpha=0.9)
+
+
+# so mainstem seems to be ok, but the associated tributaries are a jumble of diversions, canals, etc.
