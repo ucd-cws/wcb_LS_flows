@@ -11,17 +11,18 @@
 library(sf)
 library(nhdplusTools)
 library(tidyverse)
+library(mapview)
 
 # Identify the COMID ------------------------------------------------------
 
 # comid for confluence segment Shasta-Little Shasta
-peace <- st_sfc(st_point(c(-122.51016, 41.70364)), crs=4326) # peacemaker gage
-uspt <- st_sfc(st_point(c(-122.34792, 41.73355)), crs=4326) # upstream gage
+PMK <- st_sfc(st_point(c(-122.51016, 41.70364)), crs=4326) # peacemaker gage
+LSR <- st_sfc(st_point(c(-122.34792, 41.73355)), crs=4326) # upstream gage
 
-(peace_comid <- discover_nhdplus_id(point = peace))
-(uspt_comid <- discover_nhdplus_id(point = uspt))
+(PMK_comid <- discover_nhdplus_id(point = PMK))
+(LSR_comid <- discover_nhdplus_id(point = LSR))
 
-pts <- tibble("site"=c("peace","uspt"), "comid"=c(peace_comid, uspt_comid))
+pts <- tibble("site"=c("PMK","LSR"), "comid"=c(PMK_comid, LSR_comid))
 
 # what sources of data?
 # discover_nldi_sources()$source
@@ -91,22 +92,29 @@ sf::st_layers("data/nhdplus_little_shasta.gpkg")
 
 # QUICK PLOTS -------------------------------------------------------------
 
-library(mapview)
-mapviewOptions(fgb=FALSE)
+#mapviewOptions(fgb=FALSE) #This argument didn't mean anything when Ann ran the code
 
 # read data in: flowlines
 flowlines <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "NHDFlowline_Network")
 catchment <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "CatchmentSP")
 
 # quick plot
-plot(catchment$geom,  lwd = 4, border = "gray30")
+plot(catchment$geom,  lwd = 4, border = "maroon3")
 plot(sf::st_geometry(flowlines), lwd = 7, col = alpha("blue", 0.5), add=TRUE)
 plot(lshasta_ut$geometry, lwd = 1.2, col = "dodgerblue", add = TRUE)
 
 # mapview
-mapview(catchment, color="gray50", col.regions="gray50", alpha.regions=0, alpha=0.5, lwd=2) +
+lshasta_rawmap <- mapview(catchment, color="maroon3", col.regions="gray50", alpha.regions=0, alpha=0.5, lwd=2) +
   mapview(flowlines, zcol="ftype") +
   mapview(lshasta_ut, color="dodgerblue", lwd=0.75, alpha=0.9)
 
 
-# so mainstem seems to be ok, but the associated tributaries are a jumble of diversions, canals, etc.
+# so mainstem seems to be ok, but the associated tributaries are a jumble of diversions, canals, etc
+# Also, catchment outline is incomplete. See map in Little Shasta Report, figure 1 for the HUC catchment
+
+
+# Clean streamlines -------------------------------------------------------
+
+library(mapedit)
+
+lshasta_network <- selectFeatures(lshasta_ut, map = lshasta_rawmap)
