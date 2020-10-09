@@ -1,4 +1,8 @@
+# macosx specific
 .DS_Store
+
+# ignore html in docs
+docs/*.html
 
 # History files
 .Rhistory
