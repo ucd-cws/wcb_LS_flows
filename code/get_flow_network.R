@@ -15,13 +15,13 @@ library(tidyverse)
 # Identify the COMID ------------------------------------------------------
 
 # comid for confluence segment Shasta-Little Shasta
-peace <- st_sfc(st_point(c(-122.51016, 41.70364)), crs=4326) # peacemaker gage
-uspt <- st_sfc(st_point(c(-122.34792, 41.73355)), crs=4326) # upstream gage
+PMK <- st_sfc(st_point(c(-122.51016, 41.70364)), crs=4326) # peacemaker gage
+LSR <- st_sfc(st_point(c(-122.34792, 41.73355)), crs=4326) # upstream gage
 
-(peace_comid <- discover_nhdplus_id(point = peace))
-(uspt_comid <- discover_nhdplus_id(point = uspt))
+(PMK_comid <- discover_nhdplus_id(point = PMK))
+(LSR_comid <- discover_nhdplus_id(point = LSR))
 
-pts <- tibble("site"=c("peace","uspt"), "comid"=c(peace_comid, uspt_comid))
+pts <- tibble("site"=c("PMK","LSR"), "comid"=c(PMK_comid, LSR_comid))
 
 # what sources of data?
 # discover_nldi_sources()$source
@@ -62,25 +62,40 @@ lshasta_ut <- do.call(what = sf:::rbind.sf,
   mutate(type="UT")
 
 # preview
-mapview(lshasta_um, zcol="nhdplus_comid", legend = F) + mapview(lshasta_ut, color="slateblue", lwd=0.5, legend=F)
+#mapview::mapview(lshasta_um, zcol="nhdplus_comid", legend = F) + mapview::mapview(lshasta_ut, color="slateblue", lwd=0.5, legend=F)
 
+# DOWNLOAD NHD ATTRIBUTES AND WRITE TO GEOPACKAGE----------------------------
 
 # download the added data
 output_file_download <- file.path(here::here("data", "nhdplus_little_shasta.gpkg"))
 
-# this retrieves all the detailed information
-output_file_download <-subset_nhdplus(comids = lshasta_um$nhdplus_comid,
+# this retrieves all the detailed information for both mainstem and tribs
+output_flowlines <-subset_nhdplus(comids = lshasta_ut$nhdplus_comid,
                                       output_file = output_file_download,
                                       flowline_only = FALSE,
                                       overwrite = TRUE,
                                       nhdplus_data = "download", return_data = FALSE)
 
 
+# add the simple mainstem (without all the NHD attributes)
+st_write(lshasta_um, dsn="data/nhdplus_little_shasta.gpkg", layer = "flowlines_um_lshasta",
+         layer_options = "OVERWRITE=YES", delete_layer = TRUE)
+
+# add the simple tribs (without all the NHD attributes)
 st_write(lshasta_ut, dsn="data/nhdplus_little_shasta.gpkg", layer = "flowlines_ut_lshasta",
          layer_options = "OVERWRITE=YES", delete_layer = TRUE)
 
+# get the full basin with nldi function and dataRetrieval package
+basin <- dataRetrieval::findNLDI(comid = PMK_comid, find = "basin") %>%
+  lapply(st_as_sf)
+#mapview::mapview(basin$basin) + mapview::mapview(basin$origin)
 
-# READ IN DATA AND CHECK --------------------------------------------------
+# write to gpkg
+st_write(basin$basin, dsn="data/nhdplus_little_shasta.gpkg", layer = "basin_lshasta",
+         layer_options = "OVERWRITE=YES", delete_layer = TRUE)
+
+
+# CHECK Layers in DB --------------------------------------------------
 
 # see what layers
 sf::st_layers("data/nhdplus_little_shasta.gpkg")
