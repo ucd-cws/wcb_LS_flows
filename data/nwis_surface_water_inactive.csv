@@ -1,0 +1,8 @@
+SiteNumber, SiteName, SiteCategory, SiteAgency, SiteLongitude, SiteLatitude, SiteNWISURL
+"11518600","MOFFETT C NR FORT JONES CA","ST","USGS",-122.7478075,41.63319568,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11518600"
+"11518610","SOAP C TRIB NR FORT JONES CA","ST","USGS",-122.7414185,41.65263997,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11518610"
+"11517015","SHASTA R A HWY 3 NR MONTAGUE CA","ST","USGS",-122.5583572,41.7268091,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11517015"
+"11516880","SHASTA R NR GRENADA CA","ST","USGS",-122.499466,41.6482002,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11516880"
+"11516900","LITTLE SHASTA R NR MONTAGUE CA","ST","USGS",-122.3005717,41.75292395,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11516900"
+"11489350","HORSETHIEF C NR MCDOEL CA","ST","USGS",-122.0538968,41.6873729,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11489350"
+"11490500","BUTTE C NR MACDOEL CA","ST","USGS",-122.0011175,41.7165397,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11490500"

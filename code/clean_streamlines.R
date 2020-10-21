@@ -92,7 +92,7 @@ extra_comids <- c(3917364, 3917372, 3917392, 3917374, 3917328, 3917330, 3917326)
 lshasta_stream_network <- lshasta_stream_network %>% filter(!comid %in% extra_comids)
 
 # review
-mapview(lshasta_stream_network, color="darkblue",lwd=2) + mapview(lshasta_ut, color="orange", lwd=1)
+mapview(lshasta_stream_network, color="darkblue",lwd=4) + mapview(lshasta_ut, color="purple", lwd=2)
 
 # write out Little Shasta stream network as csv
 st_write(lshasta_stream_network, dsn = "data/lshasta_stream_network_sf.csv")

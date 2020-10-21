@@ -1,0 +1,7 @@
+SiteNumber, SiteName, SiteCategory, SiteAgency, SiteLongitude, SiteLatitude, SiteNWISURL
+"414331122214901","045N005W25BS01M","SP","USGS",-122.36474,41.72514568,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=414331122214901"
+"414422122201401","045N04W20DS01M","SP","USGS",-122.3383505,41.7393125,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=414422122201401"
+"414305122200501","045N004W29MS01M","SP","USGS",-122.3358502,41.717924,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=414305122200501"
+"414430122193401","045N004W07QS01M","SP","USGS",-122.327239,41.74153487,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=414430122193401"
+"413858122180801","044N004W28HS01M","SP","USGS",-122.3033487,41.64931469,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=413858122180801"
+"414823121433901","046N002E22RS01M","SP","USGS",-121.7286089,41.8062641,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=414823121433901"

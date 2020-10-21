@@ -1,0 +1,3 @@
+SiteNumber, SiteName, SiteCategory, SiteAgency, SiteLongitude, SiteLatitude, SiteNWISURL
+"11517500","SHASTA R NR YREKA CA","ST","USGS",-122.5955813,41.8229179,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11517500"
+"11517000","SHASTA R NR  MONTAGUE CA","ST","USGS",-122.5380787,41.70903196,"https://waterdata.usgs.gov/nwis/inventory?agency_code=USGS&site_no=11517000"
