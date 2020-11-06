@@ -13,6 +13,8 @@
 
 # Libraries ---------------------------------------------------------------
 
+# remotes::install_github("r-spatial/mapview")
+
 library(sf)
 library(tidyverse)
 library(janitor)
@@ -73,17 +75,18 @@ cws_lshasta_irrigcanal <- read_sf("data/shps/Shasta_MajorIrrigationCanals.shp") 
 # Mapview -----------------------------------------------------------------
 
 # make map: first add streamlines/canals
-mapview(cws_lshasta, color="darkblue", layer.name="CWS Corrected Streams", lwd=4.5) +
+(m1 <- mapview(cws_lshasta, color="darkblue", layer.name="CWS Corrected Streams", lwd=4.5) +
   mapview(nhd_flow, color="skyblue", lwd=2.5, layer.name="NHD flowline")+
-  mapview(cws_lshasta_irrigcanal, color="orange", lwd=1, layer.name="Major Irrig Canals") +
+  #mapview(cws_lshasta_irrigcanal, color="orange", lwd=1, layer.name="Major Irrig Canals") +
   # then add springs
-  mapview(dwr_springs, col.regions="seagreen", layer.name="DWR springs") +
+  #mapview(dwr_springs, col.regions="seagreen", layer.name="DWR springs") +
   # add ownership (non-private)
-  mapview(cws_lshasta_ownership, zcol="OWN_GROUP", alpha.regions=0.2, layer.name="Non-Private<br>Land Ownership") +
+  #mapview(cws_lshasta_ownership, zcol="OWN_GROUP", alpha.regions=0.2, layer.name="Non-Private<br>Land Ownership") +
   # then add watershed & catchments
-  mapview(lshasta_watershed, color="gray20", lwd=5, alpha.regions=0, legend=FALSE)+
-  mapview(ls_catch, alpha.regions=0.2, layer.name="NHD Catchments") +
+  mapview(lshasta_watershed, layer.name="HUC8 Watershed", color="gray20", lwd=5, alpha.regions=0, legend=FALSE)+
+  mapview(ls_catch, alpha.regions=0.2, layer.name="NHD Catchments")
   # then wetlands
-  mapview(nwis_hist_wetland, col.regions="darkgreen", color="darkgreen", alpha.regions=.2, layer.name="Historic NWIS Wetlands")
+  #mapview(nwis_hist_wetland, col.regions="darkgreen", color="darkgreen", alpha.regions=.2, layer.name="Historic NWIS Wetlands")
+)
 
-
+mapview::mapshot(m1, url = "docs/little_shasta_nhd_map.html")
