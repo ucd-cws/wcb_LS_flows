@@ -1,0 +1,56 @@
+---
+title: "Recalculating Drainage Area"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# libraries
+library(sf)
+library(tidyverse)
+library(mapview)
+library(tmap)
+library(glue)
+library(here)
+mapviewOptions(fgb=FALSE)
+
+```
+
+To address inaccuracies in the NHD flowlines and catchments associated with designating of canals as streams, the following steps were taken:
+
+ 1. We identified natural stream channel from artificial (canal) channels, and filtered all artificial segments out.
+ 2. Identify catchments based on the new clean streamline dataset, and create a revised catchment layer.
+ 3. Calculate the total drainage area for each NHD COMID segment that is affected by the revised catchment layer and add this attribute information as a new column in the streamline layer. Retain the old drainage area associated with each NHD segment.
+ 4. Calculate the difference between the two drainage areas, and adjust **magnitude** functional flow metrics by this percentage difference (e.g., if the adjusted drainage area is 20% smaller than the original value, the magnitude metrics are reduced by 20%).
+
+**Magnitude Metrics:**
+ - `DS_Mag_50, DS_Mag_90, FA_Mag, Peak_10, Peak_5, Peak_2, SP_Mag, Wet_BFL_Mag_10, Wet_BFL_Mag_50`
+
+## Step 1.
+
+Identify and clean the streamlines. Here we dropped all the canals and streamline network south of the Little Shasta River.
+```{r}
+
+# Get Data ----------------------------------------------------------------
+
+# layers:
+st_layers(glue("{here()}/data/nhdplus_little_shasta.gpkg"))
+
+lshasta_clean <- read_rds("data_output/lshasta_stream_network_sf.rds")
+
+# read data in: flowlines
+flowlines <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "NHDFlowline_Network")
+catchment <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "CatchmentSP")
+lshasta_ut <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "flowlines_ut_lshasta")
+lshasta_um <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "flowlines_um_lshasta")
+lshasta_basin <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "basin_lshasta")
+
+plot(catchment$geom,  lwd = 2, border = alpha("gray80", 0.5))
+plot(st_geometry(lshasta_basin), lwd = 2.5, col=alpha("forestgreen",0.3), border="darkgreen", add=TRUE)
+plot(st_geometry(lshasta_um), lwd = 7, col = alpha("maroon", 0.5), add=TRUE)
+plot(st_geometry(lshasta_ut), lwd = 1.2, col = "dodgerblue", add = TRUE)
+
+mapview(catchment) + mapview(flowlines)
+
+```
