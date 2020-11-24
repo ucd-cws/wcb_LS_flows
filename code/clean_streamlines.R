@@ -54,7 +54,7 @@ all_segments <- all_segments %>%
 
 # Review each segment individually and update all_segments df
 
-natural_unaltered_segs <- as.integer(c("3917194", "3917136", "3917138", "3917914", "3917916", "3917082", "3917114", "3917154", "3917156", "3917172", "3917164", "3917158", "3917160", "3917922", "3917364","3917372", "3917326", "3917330", "3917328", "3917374","3917392", "3917084", "3917084", "3917106", "3917130", "3917162", "3917176", "3917178", "3917198", "3917200", "3917244", "3917912", "3917918", "3917946", "3917948", "3917950"))
+natural_unaltered_segs <- as.integer(c("3917194", "3917136", "3917138", "3917914", "3917916", "3917082", "3917114", "3917154", "3917156", "3917172", "3917164", "3917158", "3917160", "3917922", "3917364","3917372", "3917326", "3917330", "3917328", "3917374","3917392", "3917084", "3917084", "3917106", "3917130", "3917162", "3917176", "3917178", "3917198", "3917200", "3917244", "3917912", "3917918", "3917946", "3917948", "3917950", "3917072", "3917070"))
 
 natural_altered_segs <- as.integer(c("948010089", "3917920"))
 
@@ -83,7 +83,7 @@ lshasta_stream_network <- all_segments %>%
 
 # REVIEW ------------------------------------------------------------------
 
-mapview(lshasta_stream_network, lwd=2) + mapview(lshasta_ut, color="orange", lwd=1)
+mapview(lshasta_stream_network, lwd=3) + mapview(lshasta_ut, color="orange", lwd=1)
 
 # ?? do we need to keep these or should they be dropped for simplicity?
 extra_comids <- c(3917364, 3917372, 3917392, 3917374, 3917328, 3917330, 3917326)
@@ -103,3 +103,4 @@ write_rds(lshasta_stream_network, file="data/lshasta_stream_network_sf.rds")
 # write to existing geopackage:
 st_write(lshasta_stream_network, dsn = "data/nhdplus_little_shasta.gpkg",
          layer="lshasta_clean", layer_options = "OVERWRITE=YES", delete_layer = TRUE)
+
