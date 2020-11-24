@@ -106,3 +106,19 @@ mapview(lshasta_clean, lwd=3) +
 #st_write(catchment_clean, db, "lshasta_catchments_clean")
 
 ```
+
+## Step 3. Calculate the total drainage area for each NHD COMID segment
+
+First we need to get the NHD flowline info for our selected COMID's, then calculate the updated drainage areas, and then add this data back to the layer.
+
+```{r}
+# get flowline data
+flowlines_trim <- flowlines %>% filter(comid %in% lshasta_clean$comid) %>% 
+        select(id:pathlength, uphydroseq:dnhydroseq, areasqkm:divdasqkm, hwnodesqkm, lakefract:surfarea)
+
+mapview(catchment_clean, zcol="areasqkm", layer.name="Catchments Area") +
+        mapview(flowlines_trim, zcol="dnhydroseq", lwd=2)
+
+
+```
+
