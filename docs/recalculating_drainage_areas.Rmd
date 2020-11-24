@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 
 # libraries
 library(sf)
@@ -25,32 +25,84 @@ To address inaccuracies in the NHD flowlines and catchments associated with desi
  4. Calculate the difference between the two drainage areas, and adjust **magnitude** functional flow metrics by this percentage difference (e.g., if the adjusted drainage area is 20% smaller than the original value, the magnitude metrics are reduced by 20%).
 
 **Magnitude Metrics:**
+
  - `DS_Mag_50, DS_Mag_90, FA_Mag, Peak_10, Peak_5, Peak_2, SP_Mag, Wet_BFL_Mag_10, Wet_BFL_Mag_50`
 
-## Step 1.
+## Step 1. Clean Streamlines
 
-Identify and clean the streamlines. Here we dropped all the canals and streamline network south of the Little Shasta River.
-```{r}
+Identify and clean the streamlines. Here we dropped all the canals and streamline network south of the Little Shasta River. This map shows the original streamlines (light blue thin lines) vs. the cleaned streamlines (dark blue thick lines).
 
-# Get Data ----------------------------------------------------------------
+```{r getData}
+
+# path to database:
+db <- glue("{here()}/data/nhdplus_little_shasta.gpkg")
 
 # layers:
-st_layers(glue("{here()}/data/nhdplus_little_shasta.gpkg"))
+#st_layers(db)
 
-lshasta_clean <- read_rds("data_output/lshasta_stream_network_sf.rds")
+# cleaned little shasta streamlines
+lshasta_clean <- read_sf(db, "lshasta_clean")
 
-# read data in: flowlines
-flowlines <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "NHDFlowline_Network")
-catchment <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "CatchmentSP")
-lshasta_ut <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "flowlines_ut_lshasta")
-lshasta_um <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "flowlines_um_lshasta")
-lshasta_basin <- sf::read_sf("data/nhdplus_little_shasta.gpkg", "basin_lshasta")
+# GET NHD data
 
-plot(catchment$geom,  lwd = 2, border = alpha("gray80", 0.5))
-plot(st_geometry(lshasta_basin), lwd = 2.5, col=alpha("forestgreen",0.3), border="darkgreen", add=TRUE)
-plot(st_geometry(lshasta_um), lwd = 7, col = alpha("maroon", 0.5), add=TRUE)
-plot(st_geometry(lshasta_ut), lwd = 1.2, col = "dodgerblue", add = TRUE)
+# full nhd flowlines and catchments with nhdplus attributes
+flowlines <- read_sf(db, "NHDFlowline_Network")
+nhd_catchment <- sf::read_sf(db, "CatchmentSP")
+nhd_basin <- read_sf(db, "basin_lshasta")
+nhd_wb <- read_sf(db, "NHDWaterBody")
 
-mapview(catchment) + mapview(flowlines)
+#st_layers("/Volumes/RAP200/nhdplus_seamless/ca_db/NHD_H_California_State_GDB.gdb")
+
+```
+
+```{r makeBasicMap, eval=FALSE}
+
+ggplot() + 
+        geom_sf(data=nhd_catchment, fill="slateblue", col=alpha("gray50", 0.5), lwd=0.2, alpha=0.25) +
+        geom_sf(data=nhd_basin, fill=NA, col=alpha("black", 0.6), lwd=1.2) +
+        geom_sf(data=flowlines, col="dodgerblue", lwd=0.5) +
+        geom_sf(data=lshasta_clean, col="darkblue", lwd=1.2) +
+        theme_void() +
+        ggspatial::annotation_north_arrow(location="br") +
+        ggspatial::annotation_scale() +
+        labs(title="Little Shasta NHD Layers", subtitle="Subcatchments, original NHD flowlines (light blue), and cleaned NHD flowlines (darkblue)")
+#ggsave(filename = "figs/map_of_flowlines_existing_vs_cleaned.png", width = 8, height = 10, units="in", dpi=300)
+
+```
+
+```{r printBasicMap, out.width='100%'}
+
+knitr::include_graphics(glue("{here()}/figs/map_of_flowlines_existing_vs_cleaned.png"))
+
+```
+
+
+## Step 2. Clean Catchments
+
+Next we cleaned the catchment layer to only include subcatchments that are part of the cleaned flowline layer. We can use the st_intersection function in addition to a filter to grab all the catchments we need.
+
+```{r quickMap, echo=T}
+
+# get spatial join to find intersects
+catchment_ids <- st_intersects(nhd_catchment, lshasta_clean) # returns sgbp list
+catchment_ids <- lengths(catchment_ids) > 0 # get list of matches
+catchment_clean <- nhd_catchment[catchment_ids, ]
+
+# need to add the few catchments that were missed:
+catch_missed <- c("catchmentsp.2515923", "catchmentsp.2515920", 
+                  # these one seems odd not to include
+                  "catchmentsp.2515839", "catchmentsp.2515810")
+
+# add to cleaned set
+catchment_clean <- nhd_catchment %>% filter(id %in% catch_missed) %>% bind_rows(., catchment_clean)
+
+mapview(lshasta_clean, lwd=3) + 
+        mapview(nhd_catchment, col.regions="orange", alpha.regions=0.3, 
+                color="darkorange", lwd=0.5, layer.name="NHD Catchments") +
+        mapview(catchment_clean, col.regions="green", alpha.regions=0.3, 
+                lwd=0.8, layer.name="Catchments to Keep")
+
+# write back out to gpkg
+#st_write(catchment_clean, db, "lshasta_catchments_clean")
 
 ```
