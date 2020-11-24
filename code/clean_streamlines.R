@@ -100,3 +100,6 @@ st_write(lshasta_stream_network, dsn = "data/lshasta_stream_network_sf.csv")
 # write out as sf RDS object
 write_rds(lshasta_stream_network, file="data/lshasta_stream_network_sf.rds")
 
+# write to existing geopackage:
+st_write(lshasta_stream_network, dsn = "data/nhdplus_little_shasta.gpkg",
+         layer="lshasta_clean", layer_options = "OVERWRITE=YES", delete_layer = TRUE)
