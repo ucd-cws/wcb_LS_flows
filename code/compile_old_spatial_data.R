@@ -18,6 +18,8 @@
 library(sf)
 library(tidyverse)
 library(janitor)
+library(here)
+library(glue)
 library(mapview)
 mapviewOptions(
   fgb = FALSE,
@@ -28,9 +30,20 @@ mapviewOptions(
 
 # Data Sets ---------------------------------------------------------------
 
-# Little Shasta Watershed
+# huc12
+h12 <- st_read("data/shps/HUC12s.shp") %>% st_transform(4269)
+
+# get huc8
+h8 <- read_rds(glue("{here()}/data_output/huc8_shasta.rds")) %>% st_transform(4269)
+
+# trim by huc8
+h12_shasta <- st_intersection(h12, h8) %>% select(-c(TNMID:Shape_Area.1)) %>%
+  st_transform(4269)
+
+# Little Shasta Watershed (HUC10)
 lshasta_watershed <- read_sf("data/shps/Little_Shasta_watershed.shp", crs=3310)
 st_crs(lshasta_watershed)
+h10_shasta <- lshasta_watershed
 
 # trimmed stream network (final version?)
 cws_lshasta <- readRDS("data_output/lshasta_stream_network_sf.rds")
@@ -49,8 +62,19 @@ dwr_springs <- read_sf("data/shps/DWR_Springs.shp") %>% st_transform(3310)
 ## trim by watershed
 dwr_springs <- st_intersection(dwr_springs, lshasta_watershed)
 
+
+# Set Geopackage ----------------------------------------------------------
+
+db <- "data/nhdplus_little_shasta.gpkg"
+
 # layers from NHD
-st_layers("data/nhdplus_little_shasta.gpkg")
+st_layers(db)
+
+# write out h10 and h12
+st_write(h10_shasta, dsn=db, layer = "h10_lshasta",
+         layer_options = "OVERWRITE=YES", delete_layer = TRUE)
+st_write(h12_shasta, dsn=db, layer = "h12_lshasta",
+         layer_options = "OVERWRITE=YES", delete_layer = TRUE)
 
 ls_catch <- read_sf("data/nhdplus_little_shasta.gpkg", "CatchmentSP") %>% st_transform(3310)
 nhd_flow <- read_sf("data/nhdplus_little_shasta.gpkg", "NHDFlowline_Network") %>%
