@@ -1,6 +1,10 @@
 ---
 title: "Recalculating Drainage Area"
-output: html_document
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+            collapsed: true
 ---
 
 ```{r setup, include=FALSE}
@@ -17,7 +21,7 @@ mapviewOptions(fgb=FALSE)
 
 ```
 
-To address inaccuracies in the NHD flowlines and catchments associated with designating of canals as streams, the following steps were taken:
+To address inaccuracies in the NHD flowlines and catchments associated with designation of canals as streams, the following steps were taken:
 
  1. We identified natural stream channel from artificial (canal) channels, and filtered all artificial segments out.
  2. Identify catchments based on the new clean streamline dataset, and create a revised catchment layer.
@@ -34,11 +38,14 @@ Identify and clean the streamlines. Here we dropped all the canals and streamlin
 
 ```{r getData}
 
+# gages
+gages<- read_rds(file = "data_output/gages_lshasta.rds")
+
 # path to database:
 db <- glue("{here()}/data/nhdplus_little_shasta.gpkg")
 
 # layers:
-#st_layers(db)
+st_layers(db)
 
 # cleaned little shasta streamlines
 lshasta_clean <- read_sf(db, "lshasta_clean")
@@ -48,22 +55,30 @@ lshasta_clean <- read_sf(db, "lshasta_clean")
 # full nhd flowlines and catchments with nhdplus attributes
 flowlines <- read_sf(db, "NHDFlowline_Network")
 nhd_catchment <- sf::read_sf(db, "CatchmentSP")
-nhd_basin <- read_sf(db, "basin_lshasta")
+nhd_basin <- read_sf(db, "basin_lshasta") # this is nhd catchment basin
 nhd_wb <- read_sf(db, "NHDWaterBody")
-
-#st_layers("/Volumes/RAP200/nhdplus_seamless/ca_db/NHD_H_California_State_GDB.gdb")
+h10 <- read_sf(db, "h10_lshasta")
+h12 <- read_sf(db, "h12_lshasta")
 
 ```
 
 ```{r makeBasicMap, eval=FALSE}
 
+nhd_basin <- st_zm(nhd_basin, drop=TRUE)
+h10 <- st_zm(h10, drop=TRUE)
+
 ggplot() + 
         geom_sf(data=nhd_catchment, fill="slateblue", col=alpha("gray50", 0.5), lwd=0.2, alpha=0.25) +
         geom_sf(data=nhd_basin, fill=NA, col=alpha("black", 0.6), lwd=1.2) +
+        geom_sf(data=h10, fill=alpha("darkblue", 0.1), col=alpha("darkblue",0.5), lwd=1)+
         geom_sf(data=flowlines, col="dodgerblue", lwd=0.5) +
         geom_sf(data=lshasta_clean, col="darkblue", lwd=1.2) +
         theme_void() +
         ggspatial::annotation_north_arrow(location="br") +
+        geom_sf_text(data=nhd_basin, aes(label="NHD Basin"), 
+                     color=alpha("black", 0.6), fontface="bold")+
+        geom_sf_text(data=h10, aes(label="HUC10"), fontface="bold",
+                     nudge_x = -0.15, nudge_y = 0.03, color=alpha("darkblue", 0.5))+
         ggspatial::annotation_scale() +
         labs(title="Little Shasta NHD Layers", subtitle="Subcatchments, original NHD flowlines (light blue), and cleaned NHD flowlines (darkblue)")
 #ggsave(filename = "figs/map_of_flowlines_existing_vs_cleaned.png", width = 8, height = 10, units="in", dpi=300)
@@ -81,7 +96,7 @@ knitr::include_graphics(glue("{here()}/figs/map_of_flowlines_existing_vs_cleaned
 
 Next we cleaned the catchment layer to only include subcatchments that are part of the cleaned flowline layer. We can use the st_intersection function in addition to a filter to grab all the catchments we need.
 
-```{r quickMap, echo=T}
+```{r cleanCatch, echo=TRUE}
 
 # get spatial join to find intersects
 catchment_ids <- st_intersects(nhd_catchment, lshasta_clean) # returns sgbp list
@@ -96,6 +111,7 @@ catch_missed <- c("catchmentsp.2515923", "catchmentsp.2515920",
 # add to cleaned set
 catchment_clean <- nhd_catchment %>% filter(id %in% catch_missed) %>% bind_rows(., catchment_clean)
 
+# make a map
 mapview(lshasta_clean, lwd=3) + 
         mapview(nhd_catchment, col.regions="orange", alpha.regions=0.3, 
                 color="darkorange", lwd=0.5, layer.name="NHD Catchments") +
@@ -107,6 +123,36 @@ mapview(lshasta_clean, lwd=3) +
 
 ```
 
+### Cleaned Catchment Map
+
+Make a static map version of just the cleaned version.
+
+```{r cleanMap, eval=F}
+
+# clean map
+ggplot() + 
+        geom_sf(data=catchment_clean, fill=NA, col=alpha("black", .9), lwd=0.2, lty=3) +
+        geom_sf(data=h10, fill="forestgreen", col=alpha("gray50", 0.7), lwd=1.2, alpha=0.25) +
+        geom_sf(data=lshasta_clean, col="darkblue", lwd=1.2) +
+        geom_sf(data=gages[c(2:3),], fill="skyblue", pch=21, size=4)+
+        theme_void() +
+        ggspatial::annotation_north_arrow(location="br") +
+        ggspatial::annotation_scale() +
+        labs(title="Little Shasta: Cleaned Catchment & Streamline Map", 
+             subtitle=glue("NHDPlus subcatchments (dotted lines), \nHUC10 (thick gray), Gages (blue dot)"))
+
+#ggsave(filename = "figs/map_of_cleaned_lshasta.png", width = 8, height = 10, units="in", dpi=300)
+
+```
+
+
+```{r printCleanMap, out.width='100%'}
+
+knitr::include_graphics(glue("{here()}/figs/map_of_cleaned_lshasta.png"))
+
+```
+
+
 ## Step 3. Calculate the total drainage area for each NHD COMID segment
 
 First we need to get the NHD flowline info for our selected COMID's, then calculate the updated drainage areas, and then add this data back to the layer.
@@ -114,11 +160,40 @@ First we need to get the NHD flowline info for our selected COMID's, then calcul
 ```{r}
 # get flowline data
 flowlines_trim <- flowlines %>% filter(comid %in% lshasta_clean$comid) %>% 
-        select(id:pathlength, uphydroseq:dnhydroseq, areasqkm:divdasqkm, hwnodesqkm, lakefract:surfarea)
+        select(id:comid, lengthkm, hydroseq, uphydroseq, dnhydroseq, areasqkm:divdasqkm, hwnodesqkm)
 
-mapview(catchment_clean, zcol="areasqkm", layer.name="Catchments Area") +
-        mapview(flowlines_trim, zcol="dnhydroseq", lwd=2)
+mapview(catchment_clean, zcol="areasqkm", layer.name="Catchment<br>Area (sqkm)") +
+        mapview(flowlines_trim, zcol="hydroseq", lwd=2, layer.name="Hydroseq ID", legend=F)
 
+
+```
+
+
+### Add Drainage Area Attributes
+
+We need to make a new drainage area attribute using our clean flowline layer.
+
+```{r addDAkm, echo=TRUE}
+
+# flowlines_trim2 <- flowlines_trim %>% 
+#         # filter to specific segs:
+#         filter(hydroseq <= 10038060) %>% 
+#         arrange(desc(hydroseq)) %>% 
+#         mutate(totdasqkm_v2 = case_when(
+#                 hydroseq<uphydroseq ~ totdasqkm + lag(totdasqkm),
+#                 TRUE ~ totdasqkm), .after=totdasqkm)
+
+## need to add the two watershed catchments south of segment hydroseq=10035874, which have areas of 2.313715+11.258265 (total of 13.57198).
+# so total area for this segment is actually: 155.3292 + 13.57198
+flowlines_trim2 <- flowlines_trim %>% 
+        filter(hydroseq <=10035874) %>% 
+        arrange(desc(hydroseq)) %>% 
+        mutate(totdasqkm_v2 = case_when(
+                hydroseq==10035874 ~ totdasqkm + (2.313715+11.258265)), 
+               .after=totdasqkm) %>% 
+        mutate(totdasqkm_v2 = case_when(
+                hydroseq<10035874
+        )
 
 ```
 
