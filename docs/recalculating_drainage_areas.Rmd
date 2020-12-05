@@ -1,5 +1,5 @@
 ---
-title: "Recalculating Drainage Area"
+title: "Little Shasta: Using FF Metrics"
 output: 
     html_document:
         toc: true
@@ -20,12 +20,20 @@ mapviewOptions(fgb=FALSE)
 
 ```
 
+As part of the CEFF case study of the Little Shasta, we identified a number of inaccuracies associated with the NHD watershed and streamline delineation.
+In part, this was because canals have been treated as streamlines.
+In particular, the canal which delivers water from Lake Shastina is routed as if it is a drainage to the Little Shasta.
+
+## Recalculating Drainage Area & Streamlines
+
 To address inaccuracies in the NHD flowlines and catchments associated with designation of canals as streams, the following steps were taken:
 
-1.  We identified natural stream channel from artificial (canal) channels, and filtered all artificial segments out.
+1.  We identified natural stream channel from artificial (canal) channels, and filtered all artificial segments out, and fixed mis-classified segments.
 2.  Identify catchments based on the new clean streamline dataset, and create a revised catchment layer.
-3.  Calculate the total drainage area for each NHD COMID segment that is affected by the revised catchment layer and add this attribute information as a new column in the streamline layer. Retain the old drainage area associated with each NHD segment.
+3.  Calculate the total drainage area for each NHD COMID segment that is affected by the revised catchment layer, and add this attribute information as a new column in the streamline layer. Retain the old drainage area associated with each NHD segment to facilitate comparisons.
 4.  Calculate the difference between the two drainage areas, and adjust **magnitude** functional flow metrics by this percentage difference (e.g., if the adjusted drainage area is 20% smaller than the original value, the magnitude metrics are reduced by 20%).
+5.  Compare **timing** and **duration** metrics from the canal segment which "connects" to the Little Shasta from the south with the same metrics associated with the segment immediately upstream on the mainstem Little Shasta.
+6.  Compare the overall drainage area and magnitude ratios between the same upstream segment and canal junction segment to see if they are comparable (to get a sense of watershed differences such as elevation, geology, and soil type which influence the underlying models)
 
 **Magnitude Metrics:**
 
@@ -72,19 +80,23 @@ nhd_basin <- st_zm(nhd_basin, drop=TRUE)
 h10 <- st_zm(h10, drop=TRUE)
 
 ggplot() + 
-        geom_sf(data=nhd_catchment, fill="slateblue", col=alpha("gray50", 0.5), lwd=0.2, alpha=0.25) +
-        geom_sf(data=nhd_basin, fill=NA, col=alpha("black", 0.6), lwd=1.2) +
-        geom_sf(data=h10, fill=alpha("darkblue", 0.1), col=alpha("darkblue",0.5), lwd=1)+
-        geom_sf(data=flowlines, col="dodgerblue", lwd=0.5) +
-        geom_sf(data=lshasta_clean, col="darkblue", lwd=1.2) +
-        theme_void() +
-        ggspatial::annotation_north_arrow(location="br") +
-        geom_sf_text(data=nhd_basin, aes(label="NHD Basin"), 
-                     color=alpha("black", 0.6), fontface="bold")+
-        geom_sf_text(data=h10, aes(label="HUC10"), fontface="bold",
-                     nudge_x = -0.15, nudge_y = 0.03, color=alpha("darkblue", 0.5))+
-        ggspatial::annotation_scale() +
-        labs(title="Little Shasta NHD Layers", subtitle="Subcatchments, original NHD flowlines (light blue), and cleaned NHD flowlines (darkblue)")
+    geom_sf(data=nhd_catchment, fill="slateblue", col=alpha("gray50", 0.5), lwd=0.2, alpha=0.25) +
+    geom_sf(data=nhd_basin, fill=NA, col=alpha("black", 0.6), lwd=1.2) +
+    geom_sf(data=h10, fill=alpha("darkblue", 0.1), col=alpha("darkblue",0.5), lwd=1)+
+    geom_sf(data=flowlines, col="dodgerblue", lwd=0.5) +
+    geom_sf(data=lshasta_clean, col="darkblue", lwd=1.2) +
+    geom_sf(data=flowlines %>% filter(comid==3917948), col="green3", lwd=1.1) +
+    geom_sf(data=flowlines %>% filter(comid==3917266), col="maroon", lwd=1.1) +
+    theme_void() +
+    ggspatial::annotation_north_arrow(location="br") +
+    geom_sf_text(data=nhd_basin, aes(label="NHD Basin"), 
+                 color=alpha("black", 0.6), fontface="bold")+
+    geom_sf_text(data=h10, aes(label="HUC10"), fontface="bold",
+                 nudge_x = -0.15, nudge_y = 0.03, color=alpha("darkblue", 0.5))+
+    ggspatial::annotation_scale() +
+    labs(title="Little Shasta NHD Layers", 
+         subtitle="Subcatchments, original NHD flowlines (light blue), and cleaned NHD flowlines (darkblue)",
+         caption = "Compare the upstream COMID 3917948 (green)\n with the canal diversion COMID 3917266 (red) to assess FFM differences")
 #ggsave(filename = "figs/map_of_flowlines_existing_vs_cleaned.png", width = 8, height = 10, units="in", dpi=300)
 
 ```
@@ -124,10 +136,10 @@ mapview(lshasta_clean, lwd=3) +
     mapview(flowlines_streamriver, 
             #zcol="ftype",
             color="skyblue", 
-            lwd=1.5, layer.name="Original Flowlines")
+            lwd=1.5, layer.name="Original 'Stream' Flowlines")
 
 # write back out to gpkg
-#st_write(catchment_clean, db, "lshasta_catchments_clean")
+st_write(catchment_clean, db, "lshasta_catchments_clean", delete_layer = TRUE)
 
 ```
 
@@ -166,10 +178,10 @@ First we need to get the NHD flowline info for our selected COMID's, then calcul
 ```{r}
 # get flowline data
 flowlines_trim <- flowlines %>% filter(comid %in% lshasta_clean$comid) %>% 
-        select(id:comid, lengthkm, hydroseq, uphydroseq, dnhydroseq, areasqkm:divdasqkm, hwnodesqkm)
+    bind_rows(., flowlines %>% filter(comid==3917230))
 
 mapview(catchment_clean, zcol="areasqkm", layer.name="Catchment<br>Area (sqkm)") +
-        mapview(flowlines_trim, zcol="hydroseq", lwd=2, layer.name="Hydroseq ID", legend=F)
+        mapview(flowlines_trim, zcol="dnhydroseq", lwd=2, layer.name="Hydroseq ID", legend=F)
 
 
 ```
@@ -179,14 +191,6 @@ mapview(catchment_clean, zcol="areasqkm", layer.name="Catchment<br>Area (sqkm)")
 We need to make a new drainage area attribute using our clean flowline layer.
 
 ```{r addDAkm, eval=F, echo=TRUE}
-
-# flowlines_trim2 <- flowlines_trim %>% 
-#         # filter to specific segs:
-#         filter(hydroseq <= 10038060) %>% 
-#         arrange(desc(hydroseq)) %>% 
-#         mutate(totdasqkm_v2 = case_when(
-#                 hydroseq<uphydroseq ~ totdasqkm + lag(totdasqkm),
-#                 TRUE ~ totdasqkm), .after=totdasqkm)
 
 ## need to add the two watershed catchments south of segment hydroseq=10035874, which have areas of 2.313715+11.258265 (total of 13.57198).
 # so total area for this segment is actually: 155.3292 + 13.57198
@@ -200,13 +204,21 @@ flowlines_trim2 <- flowlines_trim %>%
         #        hydroseq<10035874
         #)
 
+# take a look
+mapview(catchment_clean, zcol="areasqkm", layer.name="Catchment<br>Area (sqkm)") +
+    mapview(flowlines_trim, zcol="dnhydroseq", lwd=2, layer.name="Hydroseq ID", legend=F) +
+    mapview(flowlines_trim2, color="red")
+
+
 ```
 
 ## Timing & Duration Metrics
 
 One question is what to do about the change in watershed area and the impact on timing and duration metrics.
 
-To account for change in drainage area in the *cleaned* Little Shasta, we can compare timing metrics from COMID=3917948 with the segment just upstream of the canal join (COMID=3917266), at COMID junction between 3917950 and 3917948. Use the timing from upstream segment (3917948) and propagate downstream. Does appear they are different.
+To account for change in drainage area in the *cleaned* Little Shasta, we can compare timing metrics from COMID=3917948 with the segment just upstream of the canal join (COMID=3917266), at COMID junction between 3917950 and 3917948.
+Use the timing from upstream segment (3917948) and propagate downstream.
+
+Does appear they are different.
 
 Could scale magnitude based on overall drainage area to a segment (canal) vs. overall to just upstream segment.
-
