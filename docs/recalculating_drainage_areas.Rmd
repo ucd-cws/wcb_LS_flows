@@ -4,7 +4,6 @@ output:
     html_document:
         toc: true
         toc_float: true
-            collapsed: true
 ---
 
 ```{r setup, include=FALSE}
@@ -23,18 +22,20 @@ mapviewOptions(fgb=FALSE)
 
 To address inaccuracies in the NHD flowlines and catchments associated with designation of canals as streams, the following steps were taken:
 
- 1. We identified natural stream channel from artificial (canal) channels, and filtered all artificial segments out.
- 2. Identify catchments based on the new clean streamline dataset, and create a revised catchment layer.
- 3. Calculate the total drainage area for each NHD COMID segment that is affected by the revised catchment layer and add this attribute information as a new column in the streamline layer. Retain the old drainage area associated with each NHD segment.
- 4. Calculate the difference between the two drainage areas, and adjust **magnitude** functional flow metrics by this percentage difference (e.g., if the adjusted drainage area is 20% smaller than the original value, the magnitude metrics are reduced by 20%).
+1.  We identified natural stream channel from artificial (canal) channels, and filtered all artificial segments out.
+2.  Identify catchments based on the new clean streamline dataset, and create a revised catchment layer.
+3.  Calculate the total drainage area for each NHD COMID segment that is affected by the revised catchment layer and add this attribute information as a new column in the streamline layer. Retain the old drainage area associated with each NHD segment.
+4.  Calculate the difference between the two drainage areas, and adjust **magnitude** functional flow metrics by this percentage difference (e.g., if the adjusted drainage area is 20% smaller than the original value, the magnitude metrics are reduced by 20%).
 
 **Magnitude Metrics:**
 
- - `DS_Mag_50, DS_Mag_90, FA_Mag, Peak_10, Peak_5, Peak_2, SP_Mag, Wet_BFL_Mag_10, Wet_BFL_Mag_50`
+-   `DS_Mag_50, DS_Mag_90, FA_Mag, Peak_10, Peak_5, Peak_2, SP_Mag, Wet_BFL_Mag_10, Wet_BFL_Mag_50`
 
 ## Step 1. Clean Streamlines
 
-Identify and clean the streamlines. Here we dropped all the canals and streamline network south of the Little Shasta River. This map shows the original streamlines (light blue thin lines) vs. the cleaned streamlines (dark blue thick lines).
+Identify and clean the streamlines.
+Here we dropped all the canals and streamline network south of the Little Shasta River.
+This map shows the original streamlines (light blue thin lines) vs. the cleaned streamlines (dark blue thick lines).
 
 ```{r getData}
 
@@ -53,7 +54,10 @@ lshasta_clean <- read_sf(db, "lshasta_clean")
 # GET NHD data
 
 # full nhd flowlines and catchments with nhdplus attributes
-flowlines <- read_sf(db, "NHDFlowline_Network")
+flowlines <- read_sf(db, "NHDFlowline_Network") %>% 
+    select(id:reachcode,ftype:streamcalc,fromnode:hydroseq,uplevelpat:dnhydroseq, areasqkm:divdasqkm)
+flowlines_streamriver <- flowlines %>% filter(ftype=="StreamRiver")
+
 nhd_catchment <- sf::read_sf(db, "CatchmentSP")
 nhd_basin <- read_sf(db, "basin_lshasta") # this is nhd catchment basin
 nhd_wb <- read_sf(db, "NHDWaterBody")
@@ -91,10 +95,10 @@ knitr::include_graphics(glue("{here()}/figs/map_of_flowlines_existing_vs_cleaned
 
 ```
 
-
 ## Step 2. Clean Catchments
 
-Next we cleaned the catchment layer to only include subcatchments that are part of the cleaned flowline layer. We can use the st_intersection function in addition to a filter to grab all the catchments we need.
+Next we cleaned the catchment layer to only include sub-catchments that are part of the cleaned flowline layer.
+We can use the st_intersection function in addition to a filter to grab all the catchments we need.
 
 ```{r cleanCatch, echo=TRUE}
 
@@ -104,7 +108,7 @@ catchment_ids <- lengths(catchment_ids) > 0 # get list of matches
 catchment_clean <- nhd_catchment[catchment_ids, ]
 
 # need to add the few catchments that were missed:
-catch_missed <- c("catchmentsp.2515923", "catchmentsp.2515920", 
+catch_missed <- c("catchmentsp.2515923", #"catchmentsp.2515920", 
                   # these one seems odd not to include
                   "catchmentsp.2515839", "catchmentsp.2515810")
 
@@ -113,10 +117,14 @@ catchment_clean <- nhd_catchment %>% filter(id %in% catch_missed) %>% bind_rows(
 
 # make a map
 mapview(lshasta_clean, lwd=3) + 
-        mapview(nhd_catchment, col.regions="orange", alpha.regions=0.3, 
-                color="darkorange", lwd=0.5, layer.name="NHD Catchments") +
-        mapview(catchment_clean, col.regions="green", alpha.regions=0.3, 
-                lwd=0.8, layer.name="Catchments to Keep")
+    mapview(nhd_catchment, col.regions="orange", alpha.regions=0.3, 
+            color="darkorange", lwd=0.5, layer.name="NHD Catchments") +
+    mapview(catchment_clean, col.regions="green", alpha.regions=0.3, 
+            lwd=0.8, layer.name="Catchments to Keep") + 
+    mapview(flowlines_streamriver, 
+            #zcol="ftype",
+            color="skyblue", 
+            lwd=1.5, layer.name="Original Flowlines")
 
 # write back out to gpkg
 #st_write(catchment_clean, db, "lshasta_catchments_clean")
@@ -125,7 +133,7 @@ mapview(lshasta_clean, lwd=3) +
 
 ### Cleaned Catchment Map
 
-Make a static map version of just the cleaned version.
+Make a static map of just the cleaned version.
 
 ```{r cleanMap, eval=F}
 
@@ -145,13 +153,11 @@ ggplot() +
 
 ```
 
-
 ```{r printCleanMap, out.width='100%'}
 
 knitr::include_graphics(glue("{here()}/figs/map_of_cleaned_lshasta.png"))
 
 ```
-
 
 ## Step 3. Calculate the total drainage area for each NHD COMID segment
 
@@ -168,12 +174,11 @@ mapview(catchment_clean, zcol="areasqkm", layer.name="Catchment<br>Area (sqkm)")
 
 ```
 
-
 ### Add Drainage Area Attributes
 
 We need to make a new drainage area attribute using our clean flowline layer.
 
-```{r addDAkm, echo=TRUE}
+```{r addDAkm, eval=F, echo=TRUE}
 
 # flowlines_trim2 <- flowlines_trim %>% 
 #         # filter to specific segs:
@@ -190,10 +195,18 @@ flowlines_trim2 <- flowlines_trim %>%
         arrange(desc(hydroseq)) %>% 
         mutate(totdasqkm_v2 = case_when(
                 hydroseq==10035874 ~ totdasqkm + (2.313715+11.258265)), 
-               .after=totdasqkm) %>% 
-        mutate(totdasqkm_v2 = case_when(
-                hydroseq<10035874
-        )
+               .after=totdasqkm) #%>% 
+        #mutate(totdasqkm_v2 = case_when(
+        #        hydroseq<10035874
+        #)
 
 ```
+
+## Timing & Duration Metrics
+
+One question is what to do about the change in watershed area and the impact on timing and duration metrics.
+
+To account for change in drainage area in the *cleaned* Little Shasta, we can compare timing metrics from COMID=3917948 with the segment just upstream of the canal join (COMID=3917266), at COMID junction between 3917950 and 3917948. Use the timing from upstream segment (3917948) and propagate downstream. Does appear they are different.
+
+Could scale magnitude based on overall drainage area to a segment (canal) vs. overall to just upstream segment.
 
