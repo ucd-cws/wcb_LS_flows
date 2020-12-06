@@ -256,6 +256,8 @@ flowlines_trim2 %>%
         arrange(desc(comid)) %>% View()
         
 # can use fromnode and tonode to calculate drainage
+flowlines_trim2 %>% 
+        arrange(desc(comid)) %>% View()
 
 
 ```
