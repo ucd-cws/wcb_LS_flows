@@ -110,9 +110,9 @@ knitr::include_graphics(glue("{here()}/figs/map_of_flowlines_existing_vs_cleaned
 ## Step 2. Clean Catchments
 
 Next we cleaned the catchment layer to only include sub-catchments that are part of the cleaned flowline layer.
-We can use the st_intersection function in addition to a filter to grab all the catchments we need.
+We can use the `st_intersection` function in addition to a filter to grab all the catchments we need.
 
-```{r cleanCatch, echo=TRUE}
+```{r cleanCatch, echo=F}
 
 # get spatial join to find intersects
 catchment_ids <- st_intersects(nhd_catchment, lshasta_clean) # returns sgbp list
@@ -139,9 +139,43 @@ mapview(lshasta_clean, lwd=3) +
             lwd=1.5, layer.name="Original 'Stream' Flowlines")
 
 # write back out to gpkg
-st_write(catchment_clean, db, "lshasta_catchments_clean", delete_layer = TRUE)
+#st_write(catchment_clean, db, "lshasta_catchments_clean", delete_layer = TRUE)
 
 ```
+
+### Merge Catchments
+
+We need to make a new drainage area attributes using our clean flowline layer. First, we merge the catchments by dissolving `catchmentsp.2515923` with the mainstem catchment `catchmentsp.2515451` (COMID 10035874). 
+
+```{r plotWatersheds, eval=T, echo=F}
+
+plot(catchment_clean[catchment_clean$id=="catchmentsp.2515923",]$geom, col=alpha("gold2", 0.5), border = "gold2", lwd=1)
+plot(catchment_clean[catchment_clean$id=="catchmentsp.2515451",]$geom, col = "skyblue", add=TRUE, border = "darkblue", lwd=0.4)
+plot(catchment_clean$geom, add=TRUE, lty=2, border="gray")
+```
+
+We can dissolve using `st_union` of the two different pieces we want to merge.
+
+```{r intersectSheds}
+
+catchcombined <- st_union(catchment_clean[catchment_clean$id %in% c("catchmentsp.2515923"),], catchment_clean[catchment_clean$id %in% c("catchmentsp.2515451"),]) %>% 
+    # keep original featureid
+    rename(comid=featureid, featureid=featureid.1)
+
+plot(catchcombined$geom, col=alpha("forestgreen", 0.5))
+plot(catchment_clean$geom, add=T, lty=2, border="gray")
+
+# filter out original catchments
+catchment_temp <- catchment_clean %>% 
+    filter(!id %in% c("catchmentsp.2515923", "catchmentsp.2515451"))
+
+# bind back updated version
+catchment_clean <- bind_rows(catchment_temp, catchcombined) %>% 
+    # drop the duplicated cols
+    select(-c(ends_with(".1")))
+
+```
+
 
 ### Cleaned Catchment Map
 
@@ -151,7 +185,7 @@ Make a static map of just the cleaned version.
 
 # clean map
 ggplot() + 
-        geom_sf(data=catchment_clean, fill=NA, col=alpha("black", .9), lwd=0.2, lty=3) +
+        geom_sf(data=catchment_clean, fill=alpha("dodgerblue", 0.5), col=alpha("black", .9), lwd=0.2, lty=3) +
         geom_sf(data=h10, fill="forestgreen", col=alpha("gray50", 0.7), lwd=1.2, alpha=0.25) +
         geom_sf(data=lshasta_clean, col="darkblue", lwd=1.2) +
         geom_sf(data=gages[c(2:3),], fill="skyblue", pch=21, size=4)+
@@ -165,49 +199,63 @@ ggplot() +
 
 ```
 
-```{r printCleanMap, out.width='100%'}
+```{r printCleanMap, eval=T, echo=F, out.width='100%'}
 
 knitr::include_graphics(glue("{here()}/figs/map_of_cleaned_lshasta.png"))
 
 ```
 
-## Step 3. Calculate the total drainage area for each NHD COMID segment
+## Step 3. Calculate drainage area for each COMID segment
 
-First we need to get the NHD flowline info for our selected COMID's, then calculate the updated drainage areas, and then add this data back to the layer.
+First we need to get the NHD flowline info for our selected COMID's, then we can calculate the updated drainage areas, and then add this data back to the layer.
 
-```{r}
+Here we add one additional segment in the lower part of the watershed.
+
+```{r flowlineTrim}
+
 # get flowline data
 flowlines_trim <- flowlines %>% filter(comid %in% lshasta_clean$comid) %>% 
     bind_rows(., flowlines %>% filter(comid==3917230))
 
-mapview(catchment_clean, zcol="areasqkm", layer.name="Catchment<br>Area (sqkm)") +
-        mapview(flowlines_trim, zcol="dnhydroseq", lwd=2, layer.name="Hydroseq ID", legend=F)
-
+mapview(catchment_clean, col.regions="blue2", alpha.regions=0.4, layer.name="Catchment<br>Area (sqkm)") +
+        mapview(flowlines_trim, zcol="hydroseq", lwd=2, layer.name="Hydroseq ID", legend=F)
 
 ```
 
 ### Add Drainage Area Attributes
 
-We need to make a new drainage area attribute using our clean flowline layer.
+Now we have a cleaned dataset we can add the drainage area to each segment and cumulatively add them up. First we calculate the area of the watersheds and join the catchment attributes with the comids that are impacted by the cleaned watershed layer (basically everything downstream of `hydroseq=10035874`).
 
-```{r addDAkm, eval=F, echo=TRUE}
+```{r}
 
-## need to add the two watershed catchments south of segment hydroseq=10035874, which have areas of 2.313715+11.258265 (total of 13.57198).
-# so total area for this segment is actually: 155.3292 + 13.57198
+# first we calculate the area of each and add these attributes:
+catchment_clean <- catchment_clean %>% 
+    mutate(areasqkm_rev = as.numeric(units::set_units(st_area(geom), km^2))) %>% 
+    relocate(areasqkm_rev, .after=areasqkm)
+
+# next we bind the catchment attribute (updated area) to the flowlines
+# everything is the same upstream of hydroseq 10035874
+# filter first and then spatial join to get attribs
+
 flowlines_trim2 <- flowlines_trim %>% 
-        filter(hydroseq <=10035874) %>% 
-        arrange(desc(hydroseq)) %>% 
-        mutate(totdasqkm_v2 = case_when(
-                hydroseq==10035874 ~ totdasqkm + (2.313715+11.258265)), 
-               .after=totdasqkm) #%>% 
-        #mutate(totdasqkm_v2 = case_when(
-        #        hydroseq<10035874
-        #)
+    filter(hydroseq <=10035874 | comid==3917230) %>% 
+    left_join(., st_drop_geometry(catchment_clean[,c("featureid","areasqkm", "areasqkm_rev")]), by=c("comid"="featureid"))
 
-# take a look
-mapview(catchment_clean, zcol="areasqkm", layer.name="Catchment<br>Area (sqkm)") +
-    mapview(flowlines_trim, zcol="dnhydroseq", lwd=2, layer.name="Hydroseq ID", legend=F) +
-    mapview(flowlines_trim2, color="red")
+# quick preview maps
+mapview(catchment_clean, alpha.regions=0.1, color="gray", legend=F) + mapview(flowlines_trim2, zcol="comid", legend=F)
+
+```
+
+Next we arrange by the hydroseq ID, add an ordering column, and cumulatively add up the drainage area.
+
+```{r}
+
+
+# everything is the same upstream of hydroseq 10035874
+flowlines_trim2 %>% 
+        arrange(desc(comid)) %>% View()
+        
+# can use fromnode and tonode to calculate drainage
 
 
 ```
