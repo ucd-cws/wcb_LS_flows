@@ -7,7 +7,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
 
 # libraries
 library(sf)
@@ -43,7 +43,7 @@ To address inaccuracies in the NHD flowlines and catchments associated with desi
 
 Identify and clean the streamlines.
 Here we dropped all the canals and streamline network south of the Little Shasta River.
-This map shows the original streamlines (light blue thin lines) vs. the cleaned streamlines (dark blue thick lines).
+This map shows the original streamlines (light blue thin lines) vs. the cleaned streamlines (dark blue thick lines). In addition, it shows the COMID segment (green=3917948) that is upstream of the canal crossing (red segment=3917266). We can compare the predictions between these segments to assess differences in timing and duration.
 
 ```{r getData}
 
@@ -106,6 +106,29 @@ ggplot() +
 knitr::include_graphics(glue("{here()}/figs/map_of_flowlines_existing_vs_cleaned.png"))
 
 ```
+
+
+### Pull FFC predictions for COMIDS
+
+To compare the difference between the two `COMID`s, we can use the FFC R API to pull predictions for each segment, and then compare metrics.
+
+**Upstream Segment**:
+
+```{r}
+library(ffcAPIClient)
+ffctoken <- set_token(Sys.getenv("EFLOWS", ""))
+ffcAPIClient::clean_account(ffctoken)
+
+lsh_us <- ffcAPIClient::get_predicted_flow_metrics("3917948")
+lsh_ds <- ffcAPIClient::get_predicted_flow_metrics("3917266")
+
+# bind
+lsh_preds <- bind_rows(lsh_us, lsh_ds) %>% arrange(metric)
+
+DT::datatable(lsh_preds) %>% 
+    DT::formatRound(columns=c('p10', 'p25', 'p50', 'p75', 'p90'), digits=1)
+```
+
 
 ## Step 2. Clean Catchments
 
@@ -226,7 +249,7 @@ mapview(catchment_clean, col.regions="blue2", alpha.regions=0.4, layer.name="Cat
 
 Now we have a cleaned dataset we can add the drainage area to each segment and cumulatively add them up. First we calculate the area of the watersheds and join the catchment attributes with the comids that are impacted by the cleaned watershed layer (basically everything downstream of `hydroseq=10035874`).
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 
 # first we calculate the area of each and add these attributes:
 catchment_clean <- catchment_clean %>% 
@@ -248,16 +271,15 @@ mapview(catchment_clean, alpha.regions=0.1, color="gray", legend=F) + mapview(fl
 
 Next we arrange by the hydroseq ID, add an ordering column, and cumulatively add up the drainage area.
 
-```{r}
-
+```{r, eval=T}
 
 # everything is the same upstream of hydroseq 10035874
-flowlines_trim2 %>% 
-        arrange(desc(comid)) %>% View()
+#flowlines_trim2 %>% 
+#        arrange(desc(comid)) %>% View()
         
 # can use fromnode and tonode to calculate drainage
-flowlines_trim2 %>% 
-        arrange(desc(comid)) %>% View()
+DT::datatable(flowlines_trim2 %>% 
+        arrange(desc(comid))) #%>% View()
 
 
 ```
@@ -266,9 +288,7 @@ flowlines_trim2 %>%
 
 One question is what to do about the change in watershed area and the impact on timing and duration metrics.
 
-To account for change in drainage area in the *cleaned* Little Shasta, we can compare timing metrics from COMID=3917948 with the segment just upstream of the canal join (COMID=3917266), at COMID junction between 3917950 and 3917948.
-Use the timing from upstream segment (3917948) and propagate downstream.
+ - To account for change in drainage area in the *cleaned* Little Shasta, we can compare timing metrics from COMID=3917948 with the segment just upstream of the canal join (COMID=3917266), at COMID junction between 3917950 and 3917948.
+ - Use the timing from upstream segment (3917948) and propagate downstream (Does appear they are different).
 
-Does appear they are different.
-
-Could scale magnitude based on overall drainage area to a segment (canal) vs. overall to just upstream segment.
+ - Could scale magnitude based on overall drainage area to a segment (canal) vs. overall to just upstream segment.
