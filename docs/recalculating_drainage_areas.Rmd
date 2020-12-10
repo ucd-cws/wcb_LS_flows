@@ -114,7 +114,7 @@ To compare the difference between the two `COMID`s, we can use the FFC R API to 
 
 **Upstream Segment**:
 
-```{r}
+```{r ffc2Comids, eval=F}
 library(ffcAPIClient)
 ffctoken <- set_token(Sys.getenv("EFLOWS", ""))
 ffcAPIClient::clean_account(ffctoken)
@@ -125,6 +125,12 @@ lsh_ds <- ffcAPIClient::get_predicted_flow_metrics("3917266")
 # bind
 lsh_preds <- bind_rows(lsh_us, lsh_ds) %>% arrange(metric)
 
+# save
+save(lsh_preds, file = "data_output/lshasta_stream_predictions_2comids.rda")
+```
+
+```{r dataTablePreds, eval=TRUE}
+load(glue("{here()}/data_output/lshasta_stream_predictions_2comids.rda"))
 DT::datatable(lsh_preds) %>% 
     DT::formatRound(columns=c('p10', 'p25', 'p50', 'p75', 'p90'), digits=1)
 ```
@@ -252,7 +258,7 @@ Now we have a cleaned dataset we can add the drainage area to each segment and c
 ```{r, warning=FALSE, message=FALSE}
 
 # first we calculate the area of each and add these attributes:
-catchment_clean <- catchment_clean %>% 
+catchment_clean2 <- catchment_clean %>% 
     mutate(areasqkm_rev = as.numeric(units::set_units(st_area(geom), km^2))) %>% 
     relocate(areasqkm_rev, .after=areasqkm)
 
@@ -261,11 +267,14 @@ catchment_clean <- catchment_clean %>%
 # filter first and then spatial join to get attribs
 
 flowlines_trim2 <- flowlines_trim %>% 
-    filter(hydroseq <=10035874 | comid==3917230) %>% 
-    left_join(., st_drop_geometry(catchment_clean[,c("featureid","areasqkm", "areasqkm_rev")]), by=c("comid"="featureid"))
+    filter(hydroseq <=10035874) %>% 
+    left_join(., st_drop_geometry(catchment_clean2[,c("featureid","areasqkm", "areasqkm_rev")]), by=c("comid"="featureid")) %>% 
+    rename(areasqkm_catch=areasqkm.y) %>% 
+    relocate(any_of(c("areasqkm_catch", "areasqkm_rev")), .before=totdasqkm) %>% 
+    select(id:comid, ftype, lengthkm, hydroseq, contains("sqkm"))
 
 # quick preview maps
-mapview(catchment_clean, alpha.regions=0.1, color="gray", legend=F) + mapview(flowlines_trim2, zcol="comid", legend=F)
+mapview(catchment_clean2, alpha.regions=0.1, color="gray", legend=F) + mapview(flowlines_trim2, zcol="hydroseq", legend=F)
 
 ```
 
@@ -273,15 +282,25 @@ Next we arrange by the hydroseq ID, add an ordering column, and cumulatively add
 
 ```{r, eval=T}
 
-# everything is the same upstream of hydroseq 10035874
-#flowlines_trim2 %>% 
-#        arrange(desc(comid)) %>% View()
-        
-# can use fromnode and tonode to calculate drainage
-DT::datatable(flowlines_trim2 %>% 
-        arrange(desc(comid))) #%>% View()
+# check order
+#flowlines_trim2 %>% arrange(desc(hydroseq)) %>% select(id:comid, lengthkm, hydroseq, contains("sqkm")) %>% View()
 
+# everything is the same upstream of hydroseq 10035874, but only a slight difference in area in comid 3917198 (0.3)
+df_da <- flowlines_trim2 %>% 
+    arrange(desc(hydroseq)) %>% 
+    mutate(dasqkm1 =
+        lag(areasqkm_rev) + areasqkm_rev) %>% 
+    select(id:comid, lengthkm, hydroseq, contains("sqkm")) %>% 
+    mutate(dasqkm = case_when(
+        is.na(dasqkm1) ~ 155.3292,
+        TRUE ~ lag(dasqkm1) + dasqkm1
+    ))
 
+# then fill the NA's
+df_da <- df_da %>% 
+    arrange(desc(hydroseq)) %>% 
+    mutate(dasqkm2 = if_else(is.na(dasqkm), 10.7033+155.3292)
+View(df_da)
 ```
 
 ## Timing & Duration Metrics
