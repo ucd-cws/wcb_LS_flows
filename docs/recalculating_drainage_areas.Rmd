@@ -297,10 +297,10 @@ df_da <- flowlines_trim2 %>%
     ))
 
 # then fill the NA's
-df_da <- df_da %>% 
-    arrange(desc(hydroseq)) %>% 
-    mutate(dasqkm2 = if_else(is.na(dasqkm), 10.7033+155.3292)
-View(df_da)
+# df_da <- df_da %>% 
+#     arrange(desc(hydroseq)) %>% 
+#     mutate(dasqkm2 = if_else(is.na(dasqkm), 10.7033+155.3292)
+# View(df_da)
 ```
 
 ## Timing & Duration Metrics
