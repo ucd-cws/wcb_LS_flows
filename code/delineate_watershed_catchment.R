@@ -40,7 +40,7 @@ h12 <- read_sf(db, "h12_lshasta") %>% st_transform(3310)
 # get streamline end point:
 outpt <- st_line_sample(lshasta_linestring %>% filter(comid=="3917946"), sample = 1)
 
-mapview(outpt) + mapview(lshasta_linestring)
+#mapview(outpt) + mapview(lshasta_linestring)
 
 # Quick Mapview -----------------------------------------------------------
 
@@ -52,37 +52,37 @@ mapview(h12, alpha.regions=0.1, color="cyan", layer.name="H12") +
 
 # Delineate Watershed -----------------------------------------------------
 
-# convert to lat lon:
-outpt <- outpt %>% st_transform(4326)
-
-# get coords
-(xloc <- st_coordinates(outpt)[1])
-(yloc <- st_coordinates(outpt)[2])
-
-ws1 <- delineateWatershed(xlocation = xloc, ylocation = yloc, crs = 4326, rcode = "CA",
-                          includeparameters = "true", includeflowtypes = "true")
-
-
-# view map of watershed:
-leafletWatershed(ws1)
-
-# data in crazy nested list:
-class(ws1$featurecollection[[2]]$feature$features[[1]]$geometry)
-
-# save out
-writeShapefile(watershed = ws1,
-               layer = "ws_boundary", dir = "data/shps", what = "boundary")
-
-# get characteristics
-chars1 <- computeChars(workspaceID = ws1$workspaceID, rcode = "CA")
-chars1$parameters
-
-stats1 <- computeFlowStats(workspaceID = ws1$workspaceID, rcode = "CA", simplify = TRUE)
+# # convert to lat lon:
+# outpt <- outpt %>% st_transform(4326)
+#
+# # get coords
+# (xloc <- st_coordinates(outpt)[1])
+# (yloc <- st_coordinates(outpt)[2])
+#
+# ws1 <- delineateWatershed(xlocation = xloc, ylocation = yloc, crs = 4326, rcode = "CA",
+#                           includeparameters = "true", includeflowtypes = "true")
+#
+#
+# # view map of watershed:
+# leafletWatershed(ws1)
+#
+# # data in crazy nested list:
+# class(ws1$featurecollection[[2]]$feature$features[[1]]$geometry)
+#
+# # save out
+# writeShapefile(watershed = ws1,
+#                layer = "ws_boundary", dir = "data/shps", what = "boundary")
+#
+# # get characteristics
+# chars1 <- computeChars(workspaceID = ws1$workspaceID, rcode = "CA")
+# chars1$parameters
+#
+# stats1 <- computeFlowStats(workspaceID = ws1$workspaceID, rcode = "CA", simplify = TRUE)
 
 
 # Manual Watershed --------------------------------------------------------
 
-lsh_ws <- st_read("data/lshasta_ss_delineation.geojson")
+lsh_ws <- st_read("data/lshasta_ss_delineation.geojson") # from streamstats
 
 # map
 mapview(lsh_ws) +
@@ -100,10 +100,10 @@ h10_sp <- as_Spatial(h10)
 sp::proj4string(h10_sp)
 
 
-x <- elevatr::get_elev_raster(h10_sp, z = 13, clip = "locations")
+x <- elevatr::get_elev_raster(h10_sp, z = 12, clip = "locations")
 
 # https://r-spatial.github.io/stars/index.html
-mapview(x)
+# mapview(x)
 
 library(stars)
 dem <- st_as_stars(x)
@@ -111,10 +111,19 @@ class(dem)
 st_crs(dem)
 plot(dem, axes=TRUE)
 
+# write out dem
+write_stars(adrop(dem[1]), "data/lshasta_dem.tif")
+
+# read in?
+tst1 <- stars::read_stars("data/lshasta_dem.tif")
+plot(tst1, axes=FALSE)
+
+# Plot ggplot DEM ---------------------------------------------------------
+
 # plot
 ggplot() +
-  #geom_stars(data = dem[1], alpha = 0.8, downsample = c(10, 10, 1)) +
-  geom_stars(data = tst1[1], alpha = 0.8, downsample = 3) +
+  geom_stars(data = dem[1], alpha = 0.8, downsample = 3) +
+  #geom_stars(data = tst1[1], alpha = 0.8, downsample = 3) +
   viridis::scale_fill_viridis("Elev (m)", na.value="white") +
   coord_equal() +
   ggthemes::theme_map(base_family = "Roboto") +
@@ -123,11 +132,39 @@ ggplot() +
   geom_sf(data=lshasta_clean, color="darkblue")+
   theme(legend.position = "bottom")
 
-ggsave(filename = "figs/lshasta_dem_clean_streamline.png", width = 11, height = 8, dpi=300, units="in")
+#ggsave(filename = "figs/lshasta_dem_clean_streamline.png", width = 11, height = 8, dpi=300, units="in")
 
-# write out dem
-write_stars(adrop(dem[1]), "data/lshasta_dem.tif")
 
-# read in?
+
+# Plot Tmap version -------------------------------------------------------
+
+library(USAboundaries)
+ca<-us_counties(states="ca")
 tst1 <- stars::read_stars("data/lshasta_dem.tif")
-plot(tst1, axes=FALSE)
+gm_osm <- read_osm(h10, type = "esri-topo", raster=TRUE)
+
+tmap_options(max.raster = c(plot=1e8, view=1e6))
+
+# first make CA map with no border
+(map_base <-
+    tm_shape(gm_osm) + tm_rgb() +
+    tm_shape(ca) + tm_polygons(border.col = "purple", border.alpha = 0.3, alpha=0.1) +
+    tm_shape(tst1[1],) + tm_raster(palette="viridis", alpha = 0.5, title = "DEM (m)") +
+    tm_shape(lshasta_clean) + tm_lines(col="darkblue") +
+    tm_layout(frame=FALSE) +
+    tm_layout(title = "Little Shasta",
+              frame = FALSE,
+              fontfamily = "Roboto Condensed",
+              legend.outside = FALSE, attr.outside = FALSE,
+              inner.margins = 0.01, outer.margins = (0.01),
+              #legend.position = c(0.6,0.85),
+              title.position = c(0.7, 0.95)) +
+    tm_compass(type = "4star", position = c("left","bottom")) +
+    tm_scale_bar(position = c("left","bottom")))
+
+# save
+tmap_save(map_base, filename = "figs/map_of_h10_w_dem_overlay.png", height = 11, width = 8.5, units = "in", dpi = 300)
+
+#cairo_pdf(filename = "output/maps/tmap_field_museum_samples_ca_topobase.pdf", height = 11, width = 8.5)
+#map_base
+#dev.off()
