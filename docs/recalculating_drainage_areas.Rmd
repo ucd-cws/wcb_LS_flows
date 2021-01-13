@@ -312,3 +312,31 @@ One question is what to do about the change in watershed area and the impact on 
  - Use the timing from upstream segment (3917948) and propagate downstream (Does appear they are different).
 
  - Could scale magnitude based on overall drainage area to a segment (canal) vs. overall to just upstream segment.
+
+
+## Final Maps
+
+Some final maps:
+
+```{r printCleanMap1, eval=T, echo=F, out.width='100%'}
+
+knitr::include_graphics(glue("{here()}/figs/map_of_h10_w_dem_overlay.png"))
+
+```
+
+## to do
+
+ - is model stream based or catchment based? do we need a streamline to assign FFM to watershed, or is it catchment based
+ - include full H10 if catchment based
+ - include Evan's spring streamline, but need to manually attribute 2.5 cfs to mainstem, since not surface/runoff based.
+ - Step I, identify ecological goals, locations of interest to tag objectives, don't have to be tied to a gage (ideal if possible, but not necessary). Could be areas in the watershed you want to focus discussion and focus...could be where spring comes in.
+
+### Map tasks
+
+Make a map with:
+ - HUC10
+ - all NHDplus subcatchments
+ - closed basin 'streams' in south of watershed
+ - cleaned mainstem LShasta streamlines
+ - Leland and Evans springs
+ - contour lines?
