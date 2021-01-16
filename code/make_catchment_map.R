@@ -16,7 +16,6 @@ mapviewOptions(fgb=FALSE, basemaps=c("Esri.WorldTopoMap", "Esri.WorldImagery",
                                            "OpenTopoMap", "OpenStreetMap",
                                            "CartoDB.Positron", "Stamen.TopOSMFeatures"))
 
-
 # Database ----------------------------------------------------------------
 
 # get DB path
@@ -67,6 +66,21 @@ plot(flowlines$geom, col="dodgerblue", lwd=1.5, add=T)
 #   mapview(catch_h10, color="gray90", alpha=0.4, alpha.regions=0.1, lwd=0.5) +
 #   mapview(flowlines, color="dodgerblue", lwd=1.2)
 
+# add springs and streamlines ---------------------------------------------
+
+evans <- st_read("data/Evans_Channel_Alignment_approx.kml") %>% st_transform(3310)
+
+# springs
+dwr_springs <- read_sf("data/shps/DWR_Springs.shp") %>% st_transform(3310)
+
+## trim by watershed
+lsh_springs <- st_intersection(dwr_springs, h10) %>%
+  filter(Name %in% c("Evans Spring", "Cold Springs")) %>%
+  filter(!MapSource=="USGS")
+
+
+mapview(evans, color="steelblue") +
+  +  mapview(lsh_springs, col.regions="skyblue") + mapview(flowlines, zcol="streamorde")
 
 # Final Map ---------------------------------------------------------------
 
@@ -75,8 +89,19 @@ library(tmaptools)
 
 # get raster data
 tst1 <- stars::read_stars("data/lshasta_dem.tif")
-gm_osm <- read_osm(h10, type = "esri-topo", raster=TRUE)
-tmap_options(max.raster = c(plot=1e7, view=1e6))
+#gm_osm <- read_osm(h10, type = "esri-topo", raster=TRUE)
+#save(gm_osm, file = "data_output/tmaptools_h10_osm_natgeo.rda")
+load("data_output/tmaptools_h10_osm_natgeo.rda")
+tmap_options(max.raster = c(plot=1e6, view=1e6))
+
+# add col for plotting lines
+flowlines <- flowlines %>%
+  mutate(streamorder_map = streamorde*2)
+
+# make two versions of flowlines: mainstem and otherwise
+flowlines_main <- flowlines %>% filter(streamorde>=3)
+flowlines_tribs <- flowlines %>% filter(streamorde<3)
+
 
 # first make CA map with no border
 (map_base <-
@@ -84,10 +109,14 @@ tmap_options(max.raster = c(plot=1e7, view=1e6))
     tm_shape(tst1[1],) +
     tm_raster(palette="viridis", alpha = 0.5, title = "DEM (m)") +
     tm_shape(catch_h10) +
-    tm_polygons(border.col="white", alpha = 0, lwd=0.3) +
+    tm_polygons(border.col="white", alpha = 0, border.alpha = 0.9, lwd=0.3, lty=2) +
     tm_shape(h10) +
-    tm_polygons(border.col="gray30", alpha = 0, lwd=2.5) +
-    tm_shape(flowlines) + tm_lines(col="darkblue", lwd=3) +
+    tm_polygons(border.col="gray30", alpha = 0, lwd=3) +
+    tm_shape(flowlines) + tm_lines(col="darkblue", lwd="streamcalc", scale = 2.25, legend.lwd.show = FALSE) +
+    tm_shape(evans) + tm_lines(col="darkblue", lwd=0.5) +
+    tm_shape(lsh_springs) +
+    tm_dots(col="skyblue", size = 1.2, title = "Springs", legend.show = TRUE, shape = 21) +
+    tm_text("Name", auto.placement = 0.7, just = "left", xmod = 0.35, shadow = TRUE)+
     tm_layout(frame=FALSE) +
     tm_layout(title = "Little Shasta",
               frame = FALSE,
@@ -102,3 +131,4 @@ tmap_options(max.raster = c(plot=1e7, view=1e6))
 # save
 tmap_save(map_base, filename = "figs/map_of_h10_w_dem_overlay.jpg", height = 8.5, width = 11, units = "in", dpi = 300)
 
+save(catch_h10, evans, lsh_springs, h10, flowlines, file = "data_output/little_shasta_catchment_flowlines.rda")
