@@ -211,7 +211,7 @@ catchment_clean <- bind_rows(catchment_temp, catchcombined) %>%
 
 Make a static map of just the cleaned version.
 
-```{r cleanMap, eval=F}
+```{r cleanMap, echo=F, eval=F}
 
 # clean map
 ggplot() + 
@@ -231,7 +231,7 @@ ggplot() +
 
 ```{r printCleanMap, eval=T, echo=F, out.width='100%'}
 
-knitr::include_graphics(glue("{here()}/figs/map_of_cleaned_lshasta.png"))
+knitr::include_graphics(glue("{here()}/figs/map_of_h10_w_dem_overlay.jpg"))
 
 ```
 
@@ -239,49 +239,43 @@ knitr::include_graphics(glue("{here()}/figs/map_of_cleaned_lshasta.png"))
 
 First we need to get the NHD flowline info for our selected COMID's, then we can calculate the updated drainage areas, and then add this data back to the layer.
 
-Here we add one additional segment in the lower part of the watershed.
-
-```{r flowlineTrim}
-
-# get flowline data
-flowlines_trim <- flowlines %>% filter(comid %in% lshasta_clean$comid) %>% 
-    bind_rows(., flowlines %>% filter(comid==3917230))
-
-mapview(catchment_clean, col.regions="blue2", alpha.regions=0.4, layer.name="Catchment<br>Area (sqkm)") +
-        mapview(flowlines_trim, zcol="hydroseq", lwd=2, layer.name="Hydroseq ID", legend=F)
-
-```
-
 ### Add Drainage Area Attributes
 
 Now we have a cleaned dataset we can add the drainage area to each segment and cumulatively add them up. First we calculate the area of the watersheds and join the catchment attributes with the comids that are impacted by the cleaned watershed layer (basically everything downstream of `hydroseq=10035874`).
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
 
 # first we calculate the area of each and add these attributes:
-catchment_clean2 <- catchment_clean %>% 
-    mutate(areasqkm_rev = as.numeric(units::set_units(st_area(geom), km^2))) %>% 
-    relocate(areasqkm_rev, .after=areasqkm)
-
-# next we bind the catchment attribute (updated area) to the flowlines
-# everything is the same upstream of hydroseq 10035874
-# filter first and then spatial join to get attribs
-
-flowlines_trim2 <- flowlines_trim %>% 
-    filter(hydroseq <=10035874) %>% 
-    left_join(., st_drop_geometry(catchment_clean2[,c("featureid","areasqkm", "areasqkm_rev")]), by=c("comid"="featureid")) %>% 
-    rename(areasqkm_catch=areasqkm.y) %>% 
-    relocate(any_of(c("areasqkm_catch", "areasqkm_rev")), .before=totdasqkm) %>% 
-    select(id:comid, ftype, lengthkm, hydroseq, contains("sqkm"))
+# catchment_clean2 <- catchment_clean %>% 
+#     mutate(areasqkm_rev = as.numeric(units::set_units(st_area(geom), km^2))) %>% 
+#     relocate(areasqkm_rev, .after=areasqkm)
+# 
+# # next we bind the catchment attribute (updated area) to the flowlines
+# # everything is the same upstream of hydroseq 10035874
+# # filter first and then spatial join to get attribs
+# 
+# flowlines_trim2 <- flowlines_trim %>% 
+#     filter(hydroseq <=10035874) %>% 
+#     left_join(., st_drop_geometry(catchment_clean2[,c("featureid","areasqkm", "areasqkm_rev")]), by=c("comid"="featureid")) %>% 
+#     rename(areasqkm_catch=areasqkm.y) %>% 
+#     relocate(any_of(c("areasqkm_catch", "areasqkm_rev")), .before=totdasqkm) %>% 
+#     select(id:comid, ftype, lengthkm, hydroseq, contains("sqkm"))
 
 # quick preview maps
-mapview(catchment_clean2, alpha.regions=0.1, color="gray", legend=F) + mapview(flowlines_trim2, zcol="hydroseq", legend=F)
+#mapview(catchment_clean2, alpha.regions=0.1, color="gray", legend=F) + mapview(flowlines_trim2, zcol="hydroseq", legend=F)
+load("data_output/little_shasta_catchment_flowlines.rda")
+#Next we arrange by the hydroseq ID, add an ordering column, and cumulatively add up the drainage area.
+mapview(catch_h10, alpha.regions=0.1, color="gray", lwd=0.5,legend=FALSE) +
+    mapview(evans, layer.name="Evans Streamline", color="darkblue") +
+    mapview(lsh_springs,layer.name="Springs", col.regions="cyan4") +
+    mapview(h10, layer.name="HUC10", alpha.regions=0, color="gray20", lwd=2)+
+    mapview(flowlines, color="dodgerblue", legend=FALSE)
 
 ```
 
-Next we arrange by the hydroseq ID, add an ordering column, and cumulatively add up the drainage area.
 
-```{r, eval=T}
+
+```{r, eval=F}
 
 # check order
 #flowlines_trim2 %>% arrange(desc(hydroseq)) %>% select(id:comid, lengthkm, hydroseq, contains("sqkm")) %>% View()
@@ -313,30 +307,9 @@ One question is what to do about the change in watershed area and the impact on 
 
  - Could scale magnitude based on overall drainage area to a segment (canal) vs. overall to just upstream segment.
 
-
-## Final Maps
-
-Some final maps:
-
-```{r printCleanMap1, eval=T, echo=F, out.width='100%'}
-
-knitr::include_graphics(glue("{here()}/figs/map_of_h10_w_dem_overlay.png"))
-
-```
-
-## to do
+## To Do
 
  - is model stream based or catchment based? do we need a streamline to assign FFM to watershed, or is it catchment based
- - include full H10 if catchment based
- - include Evan's spring streamline, but need to manually attribute 2.5 cfs to mainstem, since not surface/runoff based.
+
  - Step I, identify ecological goals, locations of interest to tag objectives, don't have to be tied to a gage (ideal if possible, but not necessary). Could be areas in the watershed you want to focus discussion and focus...could be where spring comes in.
 
-### Map tasks
-
-Make a map with:
- - HUC10
- - all NHDplus subcatchments
- - closed basin 'streams' in south of watershed
- - cleaned mainstem LShasta streamlines
- - Leland and Evans springs
- - contour lines?
