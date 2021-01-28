@@ -139,7 +139,7 @@ DT::datatable(lsh_preds) %>%
 
 ## Step 2. Clean Catchments
 
-Next we cleaned the catchment layer to only include sub-catchments that are part of the cleaned flowline layer.
+Next we cleaned the catchment layer to only include sub-catchments that are part of the cleaned flowline layer and fall within the HUC10.
 We can use the `st_intersection` function in addition to a filter to grab all the catchments we need.
 
 ```{r cleanCatch, echo=F}
@@ -209,7 +209,7 @@ catchment_clean <- bind_rows(catchment_temp, catchcombined) %>%
 
 ### Cleaned Catchment Map
 
-Make a static map of just the cleaned version.
+Make a static map of just the cleaned version. For this, we trimmed NHDPlus catchments to the HUC10 boundary. Largely all the NHD catchments fall within the HUC10.
 
 ```{r cleanMap, echo=F, eval=F}
 
@@ -265,11 +265,12 @@ Now we have a cleaned dataset we can add the drainage area to each segment and c
 #mapview(catchment_clean2, alpha.regions=0.1, color="gray", legend=F) + mapview(flowlines_trim2, zcol="hydroseq", legend=F)
 load("data_output/little_shasta_catchment_flowlines.rda")
 #Next we arrange by the hydroseq ID, add an ordering column, and cumulatively add up the drainage area.
-mapview(catch_h10, alpha.regions=0.1, color="gray", lwd=0.5,legend=FALSE) +
+flowlines_map <- flowlines %>% select(id:hydroseq)
+mapview(catch_h10, alpha.regions=0.1, color="maroon", lwd=0.5,legend=FALSE) +
     mapview(evans, layer.name="Evans Streamline", color="darkblue") +
     mapview(lsh_springs,layer.name="Springs", col.regions="cyan4") +
     mapview(h10, layer.name="HUC10", alpha.regions=0, color="gray20", lwd=2)+
-    mapview(flowlines, color="dodgerblue", legend=FALSE)
+    mapview(flowlines_map, color="dodgerblue", legend=FALSE)
 
 ```
 

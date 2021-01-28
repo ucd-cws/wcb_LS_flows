@@ -46,14 +46,14 @@ To address inaccuracies in the NHD flowlines and catchments associated with desi
 load("data_output/little_shasta_catchment_flowlines.rda")
 
 # shrink the data down
-flowlines_map <- flowlines %>% select(id, comid, hydroseq, gnis_name, areasqkm:divdasqkm, shape_length)
+flowlines_map <- flowlines %>% select(id, comid, hydroseq, gnis_name, areasqkm:divdasqkm, shape_length, streamorde, streamorder_map, streamcalc)
 
 # map
-(m1 <- mapview(catch_h10, alpha.regions=0.1, color="maroon", lwd=0.5,legend=FALSE) +
+m1 <- mapview(catch_h10, alpha.regions=0.1, color="maroon", lwd=0.5,legend=FALSE) +
     mapview(evans, layer.name="Evans Streamline", color="darkblue") +
     #mapview(lsh_springs,layer.name="Springs", col.regions="cyan4") +
     #mapview(h10, layer.name="HUC10", alpha.regions=0, color="gray20", lwd=2)+
-    mapview(flowlines_map, color="dodgerblue", legend=FALSE))
+    mapview(flowlines_map, color="dodgerblue", legend=FALSE)
 
 ```
 
@@ -65,7 +65,7 @@ Select catchments for each mainstem stream seg starting downstream.
 
 #comids
 # 3917200, 3917198, 3917948, 3917950, 3917244, 3917946
-comid_s <- 3917946
+comid_s <- 3917950
 
 # run and draw whatever shape or line through thingg
 df_sel <- selectFeatures(catch_h10, map = m1@map, mode = "draw")
@@ -87,15 +87,92 @@ write_rds(df1, file = glue("data_output/ls_{comid_s}_N.rds"))
 ```
 
 
+## Look at Catchments
 
-## Timing & Duration Metrics
+```{r}
 
-One question is what to do about the change in watershed area and the impact on timing and duration metrics.
+library(fs)
+library(purrr)
+catchs <- fs::dir_ls(path = "data_output", type = "file", regexp = "ls_[0-9]*?_")
 
- - To account for change in drainage area in the *cleaned* Little Shasta, we can compare timing metrics from COMID=3917948 with the segment just upstream of the canal join (COMID=3917266), at COMID junction between 3917950 and 3917948.
- - Use the timing from upstream segment (3917948) and propagate downstream (Does appear they are different).
+catchments <- map(catchs, ~read_rds(.x))
+df_catch <- bind_rows(catchments) %>% st_transform(3310)
+# fix comid issue *39171948 should be 3917948
+df_catch <- df_catch %>% mutate(comid = case_when(
+  grepl(39171948, comid) ~ 3917948,
+  TRUE ~ comid
+))
 
- - Could scale magnitude based on overall drainage area to a segment (canal) vs. overall to just upstream segment.
+df_catch$comid_f <- as.factor(df_catch$comid)
+flowlines_map$comid_f <- as.factor(flowlines_map$comid)
+
+# filter catchs from upper watershed:
+catch_h10_us <- catch_h10 %>% filter(!FEATUREID %in% tst$FEATUREID)
+catch_h10_us$comid <- catch_h10_us$FEATUREID
+catch_h10_us$upper <- TRUE
+
+# bind together into one, fix crs first
+st_crs(df_catch)==st_crs(catch_h10_us)
+catch_final <- bind_rows(df_catch, catch_h10_us)
+st_crs(catch_final)
+
+# make comid a factor
+catch_final$comid_f <- as.factor(catch_final$comid)
+
+
+mapview(df_catch, zcol="comid_f", col.regions=colorspace::qualitative_hcl(6, palette = "dark2"), legend=TRUE, lwd=0.6, layer.name="COMID") + 
+  mapview(flowlines_map, color="blue2", legend=F) + 
+  mapview(catch_h10_us, color="black", alpha.col=0.8, col.regions=NA, legend=FALSE, lwd=0.6) + 
+  mapview(evans, layer.name="Evans Streamline", color="darkblue") +
+  mapview(lsh_springs,layer.name="Springs", col.regions="cyan4") +
+  mapview(h10, layer.name="HUC10",col.regions="gray20", alpha.col=0.5, alpha.regions=0, color="gray20", lwd=3)
+
+```
+
+
+## Make Static Map
+
+```{r}
+
+library(tmap)
+library(tmaptools)
+
+load("data_output/tmaptools_h10_osm_natgeo.rda")
+
+# make two versions of flowlines: mainstem and otherwise
+flowlines_main <- flowlines %>% filter(streamorde>=3)
+flowlines_tribs <- flowlines %>% filter(streamorde<3)
+
+# map
+(map_base <-
+    tm_shape(gm_osm) + tm_rgb() +
+    tm_shape(df_catch) +
+    tm_fill(col = "comid_f", alpha = 0.5, title = "Catchment COMID") +
+    tm_shape(catch_h10) +
+    tm_polygons(border.col="gray50", alpha = 0, border.alpha = 0.7, lwd=0.7, lty=2) +
+    tm_shape(h10) +
+    tm_polygons(border.col="gray30", alpha = 0, border.alpha = 0.9, lwd=4) +
+    tm_shape(flowlines_map) + tm_lines(col="darkblue", lwd="streamcalc", scale = 2.25, legend.lwd.show = FALSE) +
+    tm_shape(evans) + tm_lines(col="darkblue", lwd=0.5) +
+    tm_shape(lsh_springs) +
+    tm_dots(col="skyblue", size = 1.2, title = "Springs", legend.show = TRUE, shape = 21) +
+    tm_text("Name", auto.placement = 0.7, just = "left", xmod = 0.35, shadow = TRUE)+
+    tm_layout(frame=FALSE) +
+    tm_layout(title = "Little Shasta",
+              frame = FALSE,
+              fontfamily = "Roboto Condensed",
+              legend.outside = FALSE, attr.outside = FALSE,
+              inner.margins = 0.01, outer.margins = (0.01),
+              #legend.position = c(0.6,0.85),
+              title.position = c(0.7, 0.95)) +
+    tm_compass(type = "4star", position = c("left","bottom")) +
+    tm_scale_bar(position = c("left","bottom")))
+
+# save
+tmap_save(map_base, filename = "figs/map_of_catchments_assigned.jpg", height = 8.5, width = 11, units = "in", dpi = 300)
+
+```
+
 
 ## To Do
 
