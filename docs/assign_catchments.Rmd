@@ -1,0 +1,105 @@
+---
+title: "Reassigning Catchments"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+
+# libraries
+library(sf)
+library(tidyverse)
+library(mapview)
+library(tmap)
+library(tmaptools)
+library(glue)
+library(mapedit)
+library(leafpm)
+mapviewOptions(fgb=FALSE)
+
+```
+
+As part of the CEFF case study of the Little Shasta, we identified a number of inaccuracies associated with the NHD watershed and streamline delineation.
+In part, this was because canals have been treated as streamlines.
+In particular, the canal which delivers water from Lake Shastina is routed as if it is a drainage to the Little Shasta.
+
+## Recalculating Drainage Area & Streamlines
+
+To address inaccuracies in the NHD flowlines and catchments associated with designation of canals as streams, the following steps were taken:
+
+1.  We identified natural stream channel from artificial (canal) channels, and filtered all artificial segments out, and fixed mis-classified segments.
+2.  Identify catchments based on the new clean streamline dataset, and create a revised catchment layer. We attributed each catchment to a mainstem flowline on the Little Shasta.
+3.  Calculate the total drainage area for each mainstem NHD COMID segment and add this attribute information as a new column in the stream layer. Retain the old drainage area associated with each NHD segment to facilitate comparisons.
+4.  Calculate the difference between the two drainage areas, and adjust **magnitude** functional flow metrics by this percentage difference (e.g., if the adjusted drainage area is 20% smaller than the original value, the magnitude metrics are reduced by 20%).
+
+**Magnitude Metrics:**
+
+-   `DS_Mag_50, DS_Mag_90, FA_Mag, Peak_10, Peak_5, Peak_2, SP_Mag, Wet_BFL_Mag_10, Wet_BFL_Mag_50`
+
+## Basic Map
+
+```{r getData}
+
+load("data_output/little_shasta_catchment_flowlines.rda")
+
+# shrink the data down
+flowlines_map <- flowlines %>% select(id, comid, hydroseq, gnis_name, areasqkm:divdasqkm, shape_length)
+
+# map
+(m1 <- mapview(catch_h10, alpha.regions=0.1, color="maroon", lwd=0.5,legend=FALSE) +
+    mapview(evans, layer.name="Evans Streamline", color="darkblue") +
+    #mapview(lsh_springs,layer.name="Springs", col.regions="cyan4") +
+    #mapview(h10, layer.name="HUC10", alpha.regions=0, color="gray20", lwd=2)+
+    mapview(flowlines_map, color="dodgerblue", legend=FALSE))
+
+```
+
+### Select Features
+
+Select catchments for each mainstem stream seg starting downstream.
+
+```{r selectMap, echo=T, eval=F}
+
+#comids
+# 3917200, 3917198, 3917948, 3917950, 3917244, 3917946
+comid_s <- 3917946
+
+# run and draw whatever shape or line through thingg
+df_sel <- selectFeatures(catch_h10, map = m1@map, mode = "draw")
+
+# tidy
+df_sel <- df_sel %>% 
+  select(-edit_id)
+
+# add a comid
+df1 <- df_sel %>% 
+    mutate(comid=comid_s)
+
+# check with:
+mapview(df1, zcol="FEATUREID") + mapview(flowlines_map, color="dodgerblue", legend=F) + mapview(catch_h10, color="orange", col.regions=NA, legend=F, lwd=0.2)
+
+write_rds(df1, file = glue("data_output/ls_{comid_s}_S.rds"))
+write_rds(df1, file = glue("data_output/ls_{comid_s}_N.rds"))
+
+```
+
+
+
+## Timing & Duration Metrics
+
+One question is what to do about the change in watershed area and the impact on timing and duration metrics.
+
+ - To account for change in drainage area in the *cleaned* Little Shasta, we can compare timing metrics from COMID=3917948 with the segment just upstream of the canal join (COMID=3917266), at COMID junction between 3917950 and 3917948.
+ - Use the timing from upstream segment (3917948) and propagate downstream (Does appear they are different).
+
+ - Could scale magnitude based on overall drainage area to a segment (canal) vs. overall to just upstream segment.
+
+## To Do
+
+ - is model stream based or catchment based? do we need a streamline to assign FFM to watershed, or is it catchment based
+
+ - Step I, identify ecological goals, locations of interest to tag objectives, don't have to be tied to a gage (ideal if possible, but not necessary). Could be areas in the watershed you want to focus discussion and focus...could be where spring comes in.
+
