@@ -33,8 +33,11 @@ df_coms <- comids %>% select(-edit_id) %>%
 # mapview
 mapview(df_coms, zcol="comid_f", lwd=4) + mapview(flowlines, color="cyan4", lwd=0.5)
 
+save(df_coms, file="data_output/05_selected_comids_AOI.rda")
 
 # Now pull predictions ----------------------------------------------------
+
+load("data_output/05_selected_comids_AOI.rda")
 
 library(ffcAPIClient)
 library(purrr)
@@ -52,13 +55,18 @@ lshasta_ffc_preds <- com_predictions %>% bind_rows() %>% arrange(metric)
 # refactor the comids
 lshasta_ffc_preds <- lshasta_ffc_preds %>%
   mutate(comid_f = factor(comid,
-                           levels = c("3917200","3917948",
-                                      "3917950", "3917244",
-                                      "3917946"))) %>%
+                           levels = c("3917198","3917200",
+                                      "3917948","3917950",
+                                      "3917244","3917946"))) %>%
   arrange(metric, comid_f)
 #summary(lshasta_ffc_preds$comid_f)
+
 # mapview
-mapview(df_coms, zcol="comid_f", lwd=4)
+mapview(flowlines[,c(1:20)], color="cyan4", lwd=0.5, legend=FALSE) +
+  mapview(df_coms[,c(1:20,141:142)], zcol="comid_f", lwd=4, layer.name="Selected COMIDs") +
+  mapview(evans, color="steelblue", legend=FALSE) +
+  mapview(lsh_springs, col.regions="skyblue") +
+  mapview(h10, color="darkblue", lwd=2, alpha.regions=0, legend=FALSE)
 
 
 # Some Plots --------------------------------------------------------------
@@ -83,6 +91,7 @@ lshasta_ffc_preds <- lshasta_ffc_preds %>%
 ggplot() + geom_point(data=lshasta_ffc_preds %>% filter(flow_component=="Peak flow"), aes(x=metric, y=p50, color=comid_f), size=4) + coord_flip() +
  scale_color_viridis_d() +
   scale_y_log10() +
+  labs(y="Log scale (p50)", subtitle="Peak Flows") +
   ggdark::dark_theme_light()
 
 # spring metrics
@@ -90,16 +99,17 @@ ggplot() + geom_point(data=lshasta_ffc_preds %>% filter(flow_component=="Spring 
                       size=4, pch=21, color="gray20", alpha=0.8) +
   coord_flip() +
   scale_fill_viridis_d() +
+  labs(subtitle="Spring Recession Flows") +
   ggdark::dark_theme_light()
 
 # recession rate is identical for all
-
 ggplot() + geom_point(data=lshasta_ffc_preds %>% filter(flow_component=="Fall pulse flow"), aes(x=metric, y=p50, fill=comid_f),
                       size=4, pch=21, color="gray20", alpha=0.8) +
   coord_flip() +
+  scale_y_log10() +
+  labs(y="Log scale (p50)", subtitle="Fall Pulse Flows") +
   scale_fill_viridis_d() +
   ggdark::dark_theme_light()
-
 
 
 # Save Out ----------------------------------------------------------------

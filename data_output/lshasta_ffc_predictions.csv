@@ -1,121 +1,145 @@
-comid,p10,p25,p50,p75,p90,source,result_type,metric,comid_f,flow_component
-3917200,80.8,111,149.916666666667,194.21875,226.88,model,predicted,DS_Dur_WS,3917200,Dry-season baseflow
-3917948,80.43,110.96875,148.95,194.558333333334,227,model,predicted,DS_Dur_WS,3917948,Dry-season baseflow
-3917950,78.9,105.825,138.65,179.1875,207.01,model,predicted,DS_Dur_WS,3917950,Dry-season baseflow
-3917244,79.9666666666666,105.5375,138.5,179.0875,207.02,model,predicted,DS_Dur_WS,3917244,Dry-season baseflow
-3917946,80.22,105.3875,138.520833333333,179.041666666667,207.15,model,predicted,DS_Dur_WS,3917946,Dry-season baseflow
-3917200,0.87930563020425,2.49392496642271,8.42802775894186,15.3932863290191,20.68,model,predicted,DS_Mag_50,3917200,Dry-season baseflow
-3917948,0.845794115614622,2.26775642330607,7.99456850870546,15.512252258824,20.8,model,predicted,DS_Mag_50,3917948,Dry-season baseflow
-3917950,15.3211652041698,47.4468575445144,89.3437068190124,147.74817133955,244.64,model,predicted,DS_Mag_50,3917950,Dry-season baseflow
-3917244,14.5344623435203,46.4856059132029,88.2501301917957,146.146684783555,241.51,model,predicted,DS_Mag_50,3917244,Dry-season baseflow
-3917946,12.4069007434173,46.126632375338,87.6823944114595,137.470268326337,232.65,model,predicted,DS_Mag_50,3917946,Dry-season baseflow
-3917200,1.57645953120557,4.24353546241869,10.9642243774936,21.3164045380051,34.13,model,predicted,DS_Mag_90,3917200,Dry-season baseflow
-3917948,1.58835781329373,3.66453009282377,10.4090258205496,20.2020702104538,33.92,model,predicted,DS_Mag_90,3917948,Dry-season baseflow
-3917950,27.648555681095502,69.1766756234607,127.899653314779,239.358405674031,326.52,model,predicted,DS_Mag_90,3917950,Dry-season baseflow
-3917244,28.0983398671826,68.4834634409792,125.876522361287,234.751196250821,329.44,model,predicted,DS_Mag_90,3917244,Dry-season baseflow
-3917946,26.0121569971669,67.0665353364851,125.955260989328,232.977549408633,329.91,model,predicted,DS_Mag_90,3917946,Dry-season baseflow
-3917200,262.75,283.395833333333,299,315.13125,334,model,predicted,DS_Tim,3917200,Dry-season baseflow
-3917948,263.375,283.675,299.866666666667,316.579166666667,334.82,model,predicted,DS_Tim,3917948,Dry-season baseflow
-3917950,274.08,288,300.0625,314.322916666667,331.38,model,predicted,DS_Tim,3917950,Dry-season baseflow
-3917244,274.3275,287.691666666666,300,314.03125,331.53,model,predicted,DS_Tim,3917244,Dry-season baseflow
-3917946,274.626666666666,287.975,300,314.135416666667,331.5,model,predicted,DS_Tim,3917946,Dry-season baseflow
-3917200,2,3,4,6,8,inferred,predicted,FA_Dur,3917200,Fall pulse flow
-3917948,2,3,4,6,8,inferred,predicted,FA_Dur,3917948,Fall pulse flow
-3917950,2,3,4,6,8,inferred,predicted,FA_Dur,3917950,Fall pulse flow
-3917244,2,3,4,6,8,inferred,predicted,FA_Dur,3917244,Fall pulse flow
-3917946,2,3,4,6,8,inferred,predicted,FA_Dur,3917946,Fall pulse flow
-3917200,6.94032214479917,14.4387940344091,27.3143327688639,47.8717527084999,79.93,model,predicted,FA_Mag,3917200,Fall pulse flow
-3917948,6.491645027845,14.2722260108257,27.510431391843,47.3220013270804,78.21,model,predicted,FA_Mag,3917948,Fall pulse flow
-3917950,77.4504345766478,143.840149984651,261.846817687808,436.597237784622,733.34,model,predicted,FA_Mag,3917950,Fall pulse flow
-3917244,78.2158299629703,142.727982329897,265.587041983946,440.382918342882,742.6,model,predicted,FA_Mag,3917244,Fall pulse flow
-3917946,76.9775378853385,141.694204920217,268.405026609089,446.874406827158,727.04,model,predicted,FA_Mag,3917946,Fall pulse flow
-3917200,6.1225,15.5,32.25,47.7125,60.42,model,predicted,FA_Tim,3917200,Fall pulse flow
-3917948,6,15.1791666666666,32.1833333333334,47.55625,60.52,model,predicted,FA_Tim,3917948,Fall pulse flow
-3917950,5.125,13,27,43.2520833333333,54.72,model,predicted,FA_Tim,3917950,Fall pulse flow
-3917244,5,13,27,43.175,54.51,model,predicted,FA_Tim,3917244,Fall pulse flow
-3917946,5,13,27,42.88125,54.35,model,predicted,FA_Tim,3917946,Fall pulse flow
-3917200,201.453268301731,430.043356303439,656.6897304016439,1184.69577962889,1733.83136675582,model,predicted,Peak_10,3917200,Peak flow
-3917948,206.994029462153,457.745781501902,698.972442511083,1191.52084579098,1688.5271444424698,model,predicted,Peak_10,3917948,Peak flow
-3917950,1598.31502628359,3365.94547848998,5852.15237113636,9382.64848520036,13601.1197059723,model,predicted,Peak_10,3917950,Peak flow
-3917244,1618.9664918668302,3453.2260591179997,5973.92099342948,9503.879556100219,13887.3586258699,model,predicted,Peak_10,3917244,Peak flow
-3917946,1645.69227820106,3473.78887714634,6024.40906963621,9636.08796345494,14116.610176934399,model,predicted,Peak_10,3917946,Peak flow
-3917200,84.4571255661851,138.233162082361,343.63432688591104,509.66488773563,861.981183812468,model,predicted,Peak_2,3917200,Peak flow
-3917948,88.3835037257351,144.3414101755,350.23852583186004,520.084672273269,855.9980777092211,model,predicted,Peak_2,3917948,Peak flow
-3917950,663.224451781268,1128.87214303761,2427.6070115284197,4242.761438846379,5262.17429127383,model,predicted,Peak_2,3917950,Peak flow
-3917244,671.793824348431,1167.68890693205,2473.82203553551,4320.27912439626,5431.07773820439,model,predicted,Peak_2,3917244,Peak flow
-3917946,682.883750113039,1220.6081338696001,2533.18571236564,4464.251262710251,5531.109365339,model,predicted,Peak_2,3917946,Peak flow
-3917200,152.511454516794,349.748936817239,531.096067126622,848.6004631673351,1226.74016960266,model,predicted,Peak_5,3917200,Peak flow
-3917948,155.442523703893,355.67873661897204,540.7079877085749,866.266976341407,1242.8407256972698,model,predicted,Peak_5,3917948,Peak flow
-3917950,954.6961205714571,2507.0153406835802,3936.7034695055895,6493.87317907073,9442.29646796703,model,predicted,Peak_5,3917950,Peak flow
-3917244,943.444259489766,2530.0895926827698,3752.61704413442,6498.34632355396,9564.29823691011,model,predicted,Peak_5,3917244,Peak flow
-3917946,959.018571758764,2571.8561358448396,3974.48301002279,6677.23150835694,9680.89811006355,model,predicted,Peak_5,3917946,Peak flow
-3917200,1,1,1,1,2,inferred,predicted,Peak_Dur_10,3917200,Peak flow
-3917948,1,1,1,1,2,inferred,predicted,Peak_Dur_10,3917948,Peak flow
-3917950,1,1,1,1,2,inferred,predicted,Peak_Dur_10,3917950,Peak flow
-3917244,1,1,1,1,2,inferred,predicted,Peak_Dur_10,3917244,Peak flow
-3917946,1,1,1,1,2,inferred,predicted,Peak_Dur_10,3917946,Peak flow
-3917200,2,2,5,9,19,inferred,predicted,Peak_Dur_2,3917200,Peak flow
-3917948,2,2,5,9,19,inferred,predicted,Peak_Dur_2,3917948,Peak flow
-3917950,2,2,5,9,19,inferred,predicted,Peak_Dur_2,3917950,Peak flow
-3917244,2,2,5,9,19,inferred,predicted,Peak_Dur_2,3917244,Peak flow
-3917946,2,2,5,9,19,inferred,predicted,Peak_Dur_2,3917946,Peak flow
-3917200,1.8,2,3,4,4.4,inferred,predicted,Peak_Dur_5,3917200,Peak flow
-3917948,1.8,2,3,4,4.4,inferred,predicted,Peak_Dur_5,3917948,Peak flow
-3917950,1.8,2,3,4,4.4,inferred,predicted,Peak_Dur_5,3917950,Peak flow
-3917244,1.8,2,3,4,4.4,inferred,predicted,Peak_Dur_5,3917244,Peak flow
-3917946,1.8,2,3,4,4.4,inferred,predicted,Peak_Dur_5,3917946,Peak flow
-3917200,1,1,1,1,1.5,inferred,predicted,Peak_Fre_10,3917200,Peak flow
-3917948,1,1,1,1,1.5,inferred,predicted,Peak_Fre_10,3917948,Peak flow
-3917950,1,1,1,1,1.5,inferred,predicted,Peak_Fre_10,3917950,Peak flow
-3917244,1,1,1,1,1.5,inferred,predicted,Peak_Fre_10,3917244,Peak flow
-3917946,1,1,1,1,1.5,inferred,predicted,Peak_Fre_10,3917946,Peak flow
-3917200,1,1,2,2,4,inferred,predicted,Peak_Fre_2,3917200,Peak flow
-3917948,1,1,2,2,4,inferred,predicted,Peak_Fre_2,3917948,Peak flow
-3917950,1,1,2,2,4,inferred,predicted,Peak_Fre_2,3917950,Peak flow
-3917244,1,1,2,2,4,inferred,predicted,Peak_Fre_2,3917244,Peak flow
-3917946,1,1,2,2,4,inferred,predicted,Peak_Fre_2,3917946,Peak flow
-3917200,1,1,1,2,2,inferred,predicted,Peak_Fre_5,3917200,Peak flow
-3917948,1,1,1,2,2,inferred,predicted,Peak_Fre_5,3917948,Peak flow
-3917950,1,1,1,2,2,inferred,predicted,Peak_Fre_5,3917950,Peak flow
-3917244,1,1,1,2,2,inferred,predicted,Peak_Fre_5,3917244,Peak flow
-3917946,1,1,1,2,2,inferred,predicted,Peak_Fre_5,3917946,Peak flow
-3917200,40,57,78.95,100.85,130.52,model,predicted,SP_Dur,3917200,Spring recession flow
-3917948,42,59.6125,80.9,106.125,136.95,model,predicted,SP_Dur,3917948,Spring recession flow
-3917950,49.725,67.95,85.775,112.966666666666,135.01,model,predicted,SP_Dur,3917950,Spring recession flow
-3917244,49.7416666666667,68,85.8541666666667,113.733333333333,135.45,model,predicted,SP_Dur,3917244,Spring recession flow
-3917946,49.575,68,86,114,135.46,model,predicted,SP_Dur,3917946,Spring recession flow
-3917200,23.4830356381475,51.3706399797835,88.8672421945192,180.019258960464,326.17,model,predicted,SP_Mag,3917200,Spring recession flow
-3917948,23.1227977233738,50.8632054209573,89.1116173379423,182.999007939888,327.5,model,predicted,SP_Mag,3917948,Spring recession flow
-3917950,302.238674842215,483.764986976362,769.53683499755,1357.74267458675,2027.94,model,predicted,SP_Mag,3917950,Spring recession flow
-3917244,305.588710238729,488.771051969385,770.395081257462,1372.70708398042,2081.09,model,predicted,SP_Mag,3917244,Spring recession flow
-3917946,296.063261622222,487.830950173244,769.559815106454,1396.08349523744,2100.99,model,predicted,SP_Mag,3917946,Spring recession flow
-3917200,0.0394917870142631,0.0472706958927432,0.0555555555555556,0.0669819195397159,0.08,inferred,predicted,SP_ROC,3917200,Spring recession flow
-3917948,0.0394917870142631,0.0472706958927432,0.0555555555555556,0.0669819195397159,0.08,inferred,predicted,SP_ROC,3917948,Spring recession flow
-3917950,0.0394917870142631,0.0472706958927432,0.0555555555555556,0.0669819195397159,0.08,inferred,predicted,SP_ROC,3917950,Spring recession flow
-3917244,0.0394917870142631,0.0472706958927432,0.0555555555555556,0.0669819195397159,0.08,inferred,predicted,SP_ROC,3917244,Spring recession flow
-3917946,0.0394917870142631,0.0472706958927432,0.0555555555555556,0.0669819195397159,0.08,inferred,predicted,SP_ROC,3917946,Spring recession flow
-3917200,155.625,196.220833333334,220.5,237,250.11,model,predicted,SP_Tim,3917200,Spring recession flow
-3917948,151.95,192.8,219.95,235.635416666667,249.84,model,predicted,SP_Tim,3917948,Spring recession flow
-3917950,166.733333333334,200.125,226.8875,240.583333333333,251.15,model,predicted,SP_Tim,3917950,Spring recession flow
-3917244,165,199.60625,226,240.55,251.38,model,predicted,SP_Tim,3917244,Spring recession flow
-3917946,164.97,199.03125,226,240.116666666667,251,model,predicted,SP_Tim,3917946,Spring recession flow
-3917200,58.75,83.1666666666667,119.6125,173.2625,211.55,model,predicted,Wet_BFL_Dur,3917200,Wet-season baseflow
-3917948,59.4833333333333,82.7,120.375,173.4,210.75,model,predicted,Wet_BFL_Dur,3917948,Wet-season baseflow
-3917950,58,84,120.525,168.2125,206.41,model,predicted,Wet_BFL_Dur,3917950,Wet-season baseflow
-3917244,58,84.3,121.175,169.25,206.5,model,predicted,Wet_BFL_Dur,3917244,Wet-season baseflow
-3917946,60,86.9125,126.05,171.175,204.61,model,predicted,Wet_BFL_Dur,3917946,Wet-season baseflow
-3917200,1.05776309484191,3.88323471523735,10.6996709388061,20.0785455225892,28.67,model,predicted,Wet_BFL_Mag_10,3917200,Wet-season baseflow
-3917948,1.04196191530808,3.6740481380832,10.6061121069154,19.4258511931621,28.82,model,predicted,Wet_BFL_Mag_10,3917948,Wet-season baseflow
-3917950,31.409641081338,77.5369774313644,131.948336213292,172.504460698581,275.19,model,predicted,Wet_BFL_Mag_10,3917950,Wet-season baseflow
-3917244,29.9126679273037,76.69279989965,130.673053142105,173.372586457121,277.09,model,predicted,Wet_BFL_Mag_10,3917244,Wet-season baseflow
-3917946,29.1721624527833,76.1349914902368,131.291548730915,176.193226304552,277.7,model,predicted,Wet_BFL_Mag_10,3917946,Wet-season baseflow
-3917200,4.58087863501526,12.5748043967095,31.7031479552299,51.2406190417521,73.11,model,predicted,Wet_BFL_Mag_50,3917200,Wet-season baseflow
-3917948,4.5177116681579,12.1945773353902,31.5499318847711,51.871584320194,73.95,model,predicted,Wet_BFL_Mag_50,3917948,Wet-season baseflow
-3917950,114.721753755297,204.162960773083,300.771219446947,451.864447943977,618.82,model,predicted,Wet_BFL_Mag_50,3917950,Wet-season baseflow
-3917244,109.125873337969,202.337288117861,301.310092525129,451.051087846165,620.76,model,predicted,Wet_BFL_Mag_50,3917244,Wet-season baseflow
-3917946,104.898558416913,201.128403836598,304.308458071618,451.18361376525303,616,model,predicted,Wet_BFL_Mag_50,3917946,Wet-season baseflow
-3917200,21.575,38.35,71.6458333333333,115.552083333333,146.18,model,predicted,Wet_Tim,3917200,Wet-season baseflow
-3917948,21.4466666666667,38.25,72.4416666666667,113.104166666667,145.41,model,predicted,Wet_Tim,3917948,Wet-season baseflow
-3917950,28.66,53,90.2,122.891666666667,144.52,model,predicted,Wet_Tim,3917950,Wet-season baseflow
-3917244,28.5,51.96875,89.7916666666667,123.08125,145.17,model,predicted,Wet_Tim,3917244,Wet-season baseflow
-3917946,27.825,51.5,88.125,122.1625,145,model,predicted,Wet_Tim,3917946,Wet-season baseflow
+comid,p10,p25,p50,p75,p90,source,observed_year_start,observed_year_end,result_type,metric,comid_f,flow_component
+3917198,80.5,110,148,194,227,model,NA,NA,predicted,DS_Dur_WS,3917198,Dry-season baseflow
+3917200,80.8,111,150,194,227,model,NA,NA,predicted,DS_Dur_WS,3917200,Dry-season baseflow
+3917948,80.4,111,149,195,227,model,NA,NA,predicted,DS_Dur_WS,3917948,Dry-season baseflow
+3917950,78.9,106,139,179,207,model,NA,NA,predicted,DS_Dur_WS,3917950,Dry-season baseflow
+3917244,80,106,138,179,207,model,NA,NA,predicted,DS_Dur_WS,3917244,Dry-season baseflow
+3917946,80.2,105,139,179,207,model,NA,NA,predicted,DS_Dur_WS,3917946,Dry-season baseflow
+3917198,0.924,3.7,8.68,14.5,19.6,model,NA,NA,predicted,DS_Mag_50,3917198,Dry-season baseflow
+3917200,0.879,2.49,8.43,15.4,20.7,model,NA,NA,predicted,DS_Mag_50,3917200,Dry-season baseflow
+3917948,0.846,2.27,7.99,15.5,20.8,model,NA,NA,predicted,DS_Mag_50,3917948,Dry-season baseflow
+3917950,15.3,47.4,89.3,148,245,model,NA,NA,predicted,DS_Mag_50,3917950,Dry-season baseflow
+3917244,14.5,46.5,88.3,146,242,model,NA,NA,predicted,DS_Mag_50,3917244,Dry-season baseflow
+3917946,12.4,46.1,87.7,137,233,model,NA,NA,predicted,DS_Mag_50,3917946,Dry-season baseflow
+3917198,1.55,4.4,10.7,21.3,35.2,model,NA,NA,predicted,DS_Mag_90,3917198,Dry-season baseflow
+3917200,1.58,4.24,11,21.3,34.1,model,NA,NA,predicted,DS_Mag_90,3917200,Dry-season baseflow
+3917948,1.59,3.66,10.4,20.2,33.9,model,NA,NA,predicted,DS_Mag_90,3917948,Dry-season baseflow
+3917950,27.6,69.2,128,239,327,model,NA,NA,predicted,DS_Mag_90,3917950,Dry-season baseflow
+3917244,28.1,68.5,126,235,329,model,NA,NA,predicted,DS_Mag_90,3917244,Dry-season baseflow
+3917946,26,67.1,126,233,330,model,NA,NA,predicted,DS_Mag_90,3917946,Dry-season baseflow
+3917198,264,284,299,316,334,model,NA,NA,predicted,DS_Tim,3917198,Dry-season baseflow
+3917200,263,283,299,315,334,model,NA,NA,predicted,DS_Tim,3917200,Dry-season baseflow
+3917948,263,284,300,317,335,model,NA,NA,predicted,DS_Tim,3917948,Dry-season baseflow
+3917950,274,288,300,314,331,model,NA,NA,predicted,DS_Tim,3917950,Dry-season baseflow
+3917244,274,288,300,314,332,model,NA,NA,predicted,DS_Tim,3917244,Dry-season baseflow
+3917946,275,288,300,314,332,model,NA,NA,predicted,DS_Tim,3917946,Dry-season baseflow
+3917198,2,3,4,6,8,inferred,NA,NA,predicted,FA_Dur,3917198,Fall pulse flow
+3917200,2,3,4,6,8,inferred,NA,NA,predicted,FA_Dur,3917200,Fall pulse flow
+3917948,2,3,4,6,8,inferred,NA,NA,predicted,FA_Dur,3917948,Fall pulse flow
+3917950,2,3,4,6,8,inferred,NA,NA,predicted,FA_Dur,3917950,Fall pulse flow
+3917244,2,3,4,6,8,inferred,NA,NA,predicted,FA_Dur,3917244,Fall pulse flow
+3917946,2,3,4,6,8,inferred,NA,NA,predicted,FA_Dur,3917946,Fall pulse flow
+3917198,7.29,14.4,27.5,46.8,74.1,model,NA,NA,predicted,FA_Mag,3917198,Fall pulse flow
+3917200,6.94,14.4,27.3,47.9,79.9,model,NA,NA,predicted,FA_Mag,3917200,Fall pulse flow
+3917948,6.49,14.3,27.5,47.3,78.2,model,NA,NA,predicted,FA_Mag,3917948,Fall pulse flow
+3917950,77.5,144,262,437,733,model,NA,NA,predicted,FA_Mag,3917950,Fall pulse flow
+3917244,78.2,143,266,440,743,model,NA,NA,predicted,FA_Mag,3917244,Fall pulse flow
+3917946,77,142,268,447,727,model,NA,NA,predicted,FA_Mag,3917946,Fall pulse flow
+3917198,6,16.6,32.3,46.5,60.6,model,NA,NA,predicted,FA_Tim,3917198,Fall pulse flow
+3917200,6.12,15.5,32.2,47.7,60.4,model,NA,NA,predicted,FA_Tim,3917200,Fall pulse flow
+3917948,6,15.2,32.2,47.6,60.5,model,NA,NA,predicted,FA_Tim,3917948,Fall pulse flow
+3917950,5.12,13,27,43.3,54.7,model,NA,NA,predicted,FA_Tim,3917950,Fall pulse flow
+3917244,5,13,27,43.2,54.5,model,NA,NA,predicted,FA_Tim,3917244,Fall pulse flow
+3917946,5,13,27,42.9,54.4,model,NA,NA,predicted,FA_Tim,3917946,Fall pulse flow
+3917198,162,264,373,574,2090,model,NA,NA,predicted,Peak_10,3917198,Peak flow
+3917200,174,283,399,637,2220,model,NA,NA,predicted,Peak_10,3917200,Peak flow
+3917948,177,276,406,649,2270,model,NA,NA,predicted,Peak_10,3917948,Peak flow
+3917950,1600,3370,5850,9380,13600,model,NA,NA,predicted,Peak_10,3917950,Peak flow
+3917244,1620,3450,5970,9500,13900,model,NA,NA,predicted,Peak_10,3917244,Peak flow
+3917946,1010,1650,3570,11500,16600,model,NA,NA,predicted,Peak_10,3917946,Peak flow
+3917198,18.5,77.5,143,320,514,model,NA,NA,predicted,Peak_2,3917198,Peak flow
+3917200,21.8,82.9,163,343,617,model,NA,NA,predicted,Peak_2,3917200,Peak flow
+3917948,22.2,83.1,167,349,575,model,NA,NA,predicted,Peak_2,3917948,Peak flow
+3917950,123,674,1530,3800,4650,model,NA,NA,predicted,Peak_2,3917950,Peak flow
+3917244,125,683,1630,4090,4810,model,NA,NA,predicted,Peak_2,3917244,Peak flow
+3917946,172,694,1650,4150,4890,model,NA,NA,predicted,Peak_2,3917946,Peak flow
+3917198,115,154,165,489,1000,model,NA,NA,predicted,Peak_5,3917198,Peak flow
+3917200,153,350,531,849,1230,model,NA,NA,predicted,Peak_5,3917200,Peak flow
+3917948,155,356,541,866,1240,model,NA,NA,predicted,Peak_5,3917948,Peak flow
+3917950,409,931,2500,5620,8860,model,NA,NA,predicted,Peak_5,3917950,Peak flow
+3917244,702,943,2530,5830,9060,model,NA,NA,predicted,Peak_5,3917244,Peak flow
+3917946,685,959,2570,5930,9360,model,NA,NA,predicted,Peak_5,3917946,Peak flow
+3917198,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Dur_10,3917198,Peak flow
+3917200,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Dur_10,3917200,Peak flow
+3917948,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Dur_10,3917948,Peak flow
+3917950,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Dur_10,3917950,Peak flow
+3917244,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Dur_10,3917244,Peak flow
+3917946,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Dur_10,3917946,Peak flow
+3917198,1,1,2,4,5,inferred,NA,NA,predicted,Peak_Dur_2,3917198,Peak flow
+3917200,1,1,2,4,5,inferred,NA,NA,predicted,Peak_Dur_2,3917200,Peak flow
+3917948,1,1,2,4,5,inferred,NA,NA,predicted,Peak_Dur_2,3917948,Peak flow
+3917950,1,1,2,4,5,inferred,NA,NA,predicted,Peak_Dur_2,3917950,Peak flow
+3917244,1,1,2,4,5,inferred,NA,NA,predicted,Peak_Dur_2,3917244,Peak flow
+3917946,1,1,2,4,5,inferred,NA,NA,predicted,Peak_Dur_2,3917946,Peak flow
+3917198,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Dur_5,3917198,Peak flow
+3917200,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Dur_5,3917200,Peak flow
+3917948,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Dur_5,3917948,Peak flow
+3917950,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Dur_5,3917950,Peak flow
+3917244,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Dur_5,3917244,Peak flow
+3917946,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Dur_5,3917946,Peak flow
+3917198,1,1,1,1,1.5,inferred,NA,NA,predicted,Peak_Fre_10,3917198,Peak flow
+3917200,1,1,1,1,1.5,inferred,NA,NA,predicted,Peak_Fre_10,3917200,Peak flow
+3917948,1,1,1,1,1.5,inferred,NA,NA,predicted,Peak_Fre_10,3917948,Peak flow
+3917950,1,1,1,1,1.5,inferred,NA,NA,predicted,Peak_Fre_10,3917950,Peak flow
+3917244,1,1,1,1,1.5,inferred,NA,NA,predicted,Peak_Fre_10,3917244,Peak flow
+3917946,1,1,1,1,1.5,inferred,NA,NA,predicted,Peak_Fre_10,3917946,Peak flow
+3917198,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Fre_2,3917198,Peak flow
+3917200,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Fre_2,3917200,Peak flow
+3917948,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Fre_2,3917948,Peak flow
+3917950,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Fre_2,3917950,Peak flow
+3917244,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Fre_2,3917244,Peak flow
+3917946,1,1,1,2,3,inferred,NA,NA,predicted,Peak_Fre_2,3917946,Peak flow
+3917198,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Fre_5,3917198,Peak flow
+3917200,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Fre_5,3917200,Peak flow
+3917948,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Fre_5,3917948,Peak flow
+3917950,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Fre_5,3917950,Peak flow
+3917244,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Fre_5,3917244,Peak flow
+3917946,1,1,1,1,2,inferred,NA,NA,predicted,Peak_Fre_5,3917946,Peak flow
+3917198,41,57,77.6,99,127,model,NA,NA,predicted,SP_Dur,3917198,Spring recession flow
+3917200,40,57,79,101,131,model,NA,NA,predicted,SP_Dur,3917200,Spring recession flow
+3917948,42,59.6,80.9,106,137,model,NA,NA,predicted,SP_Dur,3917948,Spring recession flow
+3917950,49.7,68,85.8,113,135,model,NA,NA,predicted,SP_Dur,3917950,Spring recession flow
+3917244,49.7,68,85.9,114,135,model,NA,NA,predicted,SP_Dur,3917244,Spring recession flow
+3917946,49.6,68,86,114,135,model,NA,NA,predicted,SP_Dur,3917946,Spring recession flow
+3917198,25.2,52.9,90,171,308,model,NA,NA,predicted,SP_Mag,3917198,Spring recession flow
+3917200,23.5,51.4,88.9,180,326,model,NA,NA,predicted,SP_Mag,3917200,Spring recession flow
+3917948,23.1,50.9,89.1,183,328,model,NA,NA,predicted,SP_Mag,3917948,Spring recession flow
+3917950,302,484,770,1360,2030,model,NA,NA,predicted,SP_Mag,3917950,Spring recession flow
+3917244,306,489,770,1370,2080,model,NA,NA,predicted,SP_Mag,3917244,Spring recession flow
+3917946,296,488,770,1400,2100,model,NA,NA,predicted,SP_Mag,3917946,Spring recession flow
+3917198,0.0395,0.0473,0.0556,0.067,0.0814,inferred,NA,NA,predicted,SP_ROC,3917198,Spring recession flow
+3917200,0.0395,0.0473,0.0556,0.067,0.0814,inferred,NA,NA,predicted,SP_ROC,3917200,Spring recession flow
+3917948,0.0395,0.0473,0.0556,0.067,0.0814,inferred,NA,NA,predicted,SP_ROC,3917948,Spring recession flow
+3917950,0.0395,0.0473,0.0556,0.067,0.0814,inferred,NA,NA,predicted,SP_ROC,3917950,Spring recession flow
+3917244,0.0395,0.0473,0.0556,0.067,0.0814,inferred,NA,NA,predicted,SP_ROC,3917244,Spring recession flow
+3917946,0.0395,0.0473,0.0556,0.067,0.0814,inferred,NA,NA,predicted,SP_ROC,3917946,Spring recession flow
+3917198,161,199,223,239,251,model,NA,NA,predicted,SP_Tim,3917198,Spring recession flow
+3917200,156,196,220,237,250,model,NA,NA,predicted,SP_Tim,3917200,Spring recession flow
+3917948,152,193,220,236,250,model,NA,NA,predicted,SP_Tim,3917948,Spring recession flow
+3917950,167,200,227,241,251,model,NA,NA,predicted,SP_Tim,3917950,Spring recession flow
+3917244,165,200,226,241,251,model,NA,NA,predicted,SP_Tim,3917244,Spring recession flow
+3917946,165,199,226,240,251,model,NA,NA,predicted,SP_Tim,3917946,Spring recession flow
+3917198,59.4,83.9,121,174,211,model,NA,NA,predicted,Wet_BFL_Dur,3917198,Wet-season baseflow
+3917200,58.8,83.2,120,173,212,model,NA,NA,predicted,Wet_BFL_Dur,3917200,Wet-season baseflow
+3917948,59.5,82.7,120,173,211,model,NA,NA,predicted,Wet_BFL_Dur,3917948,Wet-season baseflow
+3917950,58,84,121,168,206,model,NA,NA,predicted,Wet_BFL_Dur,3917950,Wet-season baseflow
+3917244,58,84.3,121,169,206,model,NA,NA,predicted,Wet_BFL_Dur,3917244,Wet-season baseflow
+3917946,60,86.9,126,171,205,model,NA,NA,predicted,Wet_BFL_Dur,3917946,Wet-season baseflow
+3917198,1.09,4.07,10.8,19.9,27.7,model,NA,NA,predicted,Wet_BFL_Mag_10,3917198,Wet-season baseflow
+3917200,1.06,3.88,10.7,20.1,28.7,model,NA,NA,predicted,Wet_BFL_Mag_10,3917200,Wet-season baseflow
+3917948,1.04,3.67,10.6,19.4,28.8,model,NA,NA,predicted,Wet_BFL_Mag_10,3917948,Wet-season baseflow
+3917950,31.4,77.5,132,173,275,model,NA,NA,predicted,Wet_BFL_Mag_10,3917950,Wet-season baseflow
+3917244,29.9,76.7,131,173,277,model,NA,NA,predicted,Wet_BFL_Mag_10,3917244,Wet-season baseflow
+3917946,29.2,76.1,131,176,278,model,NA,NA,predicted,Wet_BFL_Mag_10,3917946,Wet-season baseflow
+3917198,5.03,14.2,32.5,48.3,69,model,NA,NA,predicted,Wet_BFL_Mag_50,3917198,Wet-season baseflow
+3917200,4.58,12.6,31.7,51.2,73.1,model,NA,NA,predicted,Wet_BFL_Mag_50,3917200,Wet-season baseflow
+3917948,4.52,12.2,31.5,51.9,74,model,NA,NA,predicted,Wet_BFL_Mag_50,3917948,Wet-season baseflow
+3917950,115,204,301,452,619,model,NA,NA,predicted,Wet_BFL_Mag_50,3917950,Wet-season baseflow
+3917244,109,202,301,451,621,model,NA,NA,predicted,Wet_BFL_Mag_50,3917244,Wet-season baseflow
+3917946,105,201,304,451,616,model,NA,NA,predicted,Wet_BFL_Mag_50,3917946,Wet-season baseflow
+3917198,22.5,39.8,73.8,118,149,model,NA,NA,predicted,Wet_Tim,3917198,Wet-season baseflow
+3917200,21.6,38.4,71.6,116,146,model,NA,NA,predicted,Wet_Tim,3917200,Wet-season baseflow
+3917948,21.4,38.2,72.4,113,145,model,NA,NA,predicted,Wet_Tim,3917948,Wet-season baseflow
+3917950,28.7,53,90.2,123,145,model,NA,NA,predicted,Wet_Tim,3917950,Wet-season baseflow
+3917244,28.5,52,89.8,123,145,model,NA,NA,predicted,Wet_Tim,3917244,Wet-season baseflow
+3917946,27.8,51.5,88.1,122,145,model,NA,NA,predicted,Wet_Tim,3917946,Wet-season baseflow
