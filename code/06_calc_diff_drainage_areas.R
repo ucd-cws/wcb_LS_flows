@@ -27,7 +27,6 @@ catchs <- fs::dir_ls(path = "data_output", type = "file", regexp = "ls_[0-9]*?_"
 catchments <- map(catchs, ~read_rds(.x))
 df_catch <- bind_rows(catchments) %>% st_transform(3310)
 
-
 # Tidy and Clean Data -----------------------------------------------------
 
 # reduce fields
@@ -41,6 +40,10 @@ df_catch <- df_catch %>% mutate(comid = case_when(
 # make factor
 df_catch$comid_f <- as.factor(df_catch$comid)
 flowlines_map$comid_f <- as.factor(flowlines_map$comid)
+
+# make a sum area table of drainage area for each COMID (original area_sqkm)
+df_catch_summary <- df_catch %>% st_drop_geometry %>% group_by(comid_f) %>%
+  summarize(areasqkm_orig = sum(AreaSqKM))
 
 # filter catchs from upper watershed:
 catch_h10_us <- catch_h10 %>% filter(!FEATUREID %in% df_catch$FEATUREID)
@@ -69,13 +72,15 @@ mapview(df_catch, zcol="comid_f", col.regions=colorspace::qualitative_hcl(6, pal
 
 df_catch_diss <- rmapshaper::ms_dissolve(df_catch, field="comid_f")
 
-mapview(df_catch_diss)
+plot(df_catch_diss$geom, lwd=2, col="gray70")
+plot(df_catch$geom, border="maroon", add=T, lty=2)
+plot(flowlines_map$geom, col = "steelblue", lwd=2, add=T)
 
 # Calculate Revised Drainage Area -------------------------------------------------
 
 df_catch_diss$area_sqkm <- st_area(df_catch_diss$geom) %>% units::set_units(km^2)
 
-df_catch_diss$area_sqkm_nu <- df_catch_diss$area_sqkm %>% units::drop_units() %>% round(3)
+df_catch_diss$area_sqkm_new <- df_catch_diss$area_sqkm %>% units::drop_units() %>% round(3)
 
 # make comid a integer
 df_catch_diss$comid <- as.integer(as.character(df_catch_diss$comid_f))
@@ -86,12 +91,40 @@ mapview(df_catch_diss, zcol="comid_f") +
 
 # select flowline area cols
 df_coms_sel <- df_coms %>%
-  select(comid, contains("sqkm"), streamleve, streamorde, geom, -hwnodesqkm)
+  select(comid, contains("sqkm"), geom, -hwnodesqkm)
 
 # join with updated catch
-df_catch_final <- left_join(df_coms_sel, st_drop_geometry(df_catch_diss), by=c("comid"))
+df_catch_final <- left_join(df_coms_sel, st_drop_geometry(df_catch_diss), by=c("comid")) %>%
+  select(comid, comid_f, areasqkm, area_sqkm_new, totdasqkm:divdasqkm, -c(area_sqkm), geom)
 
-mapview(df_catch_final, zcol="comid_f")
+# order the comids correctly
+df_catch_final$comid_f <- forcats::fct_reorder(df_catch_final$comid_f,
+                                               c("3917198", "3917200","3917948",
+                                                 "3917950", "3917944","3917946"))
+
+df_catch_final <- df_catch_final %>% arrange(comid_f)
+
+# Finally Calculate Percentage Difference to Adjust Metrics ---------------
+
+# mapview(df_catch_final, zcol="comid_f", lwd=4) +
+#   mapview(df_catch_diss, zcol="comid_f") +
+#   mapview(flowlines_map, color="cyan4", legend=F, lwd=0.5) +
+#   mapview(catch_final, color="black", alpha.col=0.8, col.regions=NA, legend=FALSE, lwd=0.6) +
+#   mapview(evans, layer.name="Evans Streamline", color="cyan4") +
+#   mapview(lsh_springs,layer.name="Springs", col.regions="cyan4")
+
+# adjust percentage diff in watershed drainage areas per comid
+df_da_final <- df_catch_final %>% #st_drop_geometry() %>%
+  arrange(comid_f) %>%
+  mutate(totdasqkm_new=cumsum(area_sqkm_new)+145.0116,
+         adjusted_da_prcnt=((totdasqkm_new-totdasqkm)/totdasqkm)*100) %>%
+  select(-areasqkm)
+
+# view
+df_da_final
+
+# the diff between totdasqkm and divdasqkm (326.6136)
 
 # save
-save(df_catch_final, file = "data_output/06_catcharea_final_comids.rda")
+save(df_catch_diss, df_da_final, catch_final, file = "data_output/06_catcharea_final_adjust.rda")
+

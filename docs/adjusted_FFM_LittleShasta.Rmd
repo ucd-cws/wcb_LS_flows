@@ -1,0 +1,166 @@
+---
+title: "Adjusted FFMs"
+output: 
+    html_document:
+    highlight: pygments
+    theme: yeti
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+
+# libraries
+library(sf)
+library(tidyverse)
+library(mapview)
+library(tmap)
+library(tmaptools)
+library(glue)
+library(here)
+library(mapedit)
+library(leafpm)
+mapviewOptions(fgb=FALSE)
+
+```
+
+Functional flow metrics were adjusted based on revised watershed areas to correct for the revised catchments.
+
+## Revised Catchments
+
+Watershed catchments were based on NHDPlus catchments, and bounded by the HUC10 for the Little Shasta. This meant several small catchment edges were "trimmed", as some of the subcatchments extended outside of the HUC10. We lumped catchments associated with the lower 6 COMID as follows: 
+
+```{r printBasicMap, out.width='100%'}
+
+knitr::include_graphics(here("figs/map_of_catchments_assigned.jpg"))
+
+```
+
+Some of these combinations were largely the same as already attributed by NHD. However, some of the southwest catchments were combined based on groundwater mapping data, and the low-lying elevation, which is largely flat in the southwest part of the watershed.
+
+```{r printBasicDEM, out.width='100%'}
+
+knitr::include_graphics(here("figs/lshasta_dem_clean_streamline.png"))
+
+```
+
+### Combining and Calculating Areas
+
+Areas of interest were the lower most 6 COMID segments in the Little Shasta. Thus we focused on delineating the catchments associated with these stream segments.
+We used the following aggregations (see interactive map), and assumed above this point there was no change in watershed area based on NHD catchments. There is a notable difference in the yellow (COMID=3917950) because the Montague Canal was previously associated/attributed with this segment, which included many catchments far south (and outside) of the Little Shasta Drainage.
+
+
+```{r, echo=F, message=FALSE, warning=FALSE}
+
+# all data
+load(here("data_output/little_shasta_catchment_flowlines.rda"))
+
+# reduce fields
+flowlines_map <- flowlines %>% select(id, comid, hydroseq, gnis_name, areasqkm:divdasqkm, shape_length, streamorde, streamorder_map, streamcalc)
+
+# df_coms = selected comids
+load(here("data_output/05_selected_comids_AOI.rda"))
+
+# FFC predictions
+ffc_preds <- read_csv(here("data_output/lshasta_ffc_predictions.csv"))
+
+load(here("data_output/06_catcharea_final_adjust.rda"))
+
+# reorder factors
+df_da_final$comid_f <- factor(as.character(df_da_final$comid),
+                              levels=c(3917198, 3917200, 3917948,
+                                       3917950, 3917244, 3917946))
+#df_da_final$comid_f
+
+# path to database:
+db <- glue("{here()}/data/nhdplus_little_shasta.gpkg")
+
+# original catchments
+catch_orig <- st_read(db, "catchments_ls_nhdplus18", quiet = TRUE)
+
+```
+
+```{r, echo=F}
+mapview(df_da_final, zcol="comid_f", lwd=4, layer.name="AOI Comids") +
+  mapview(df_catch_diss, zcol="comid_f", layer.name="Revised Catchments") +
+  mapview(flowlines_map, color="cyan4", legend=F, lwd=0.5) +
+ # mapview(catch_orig, color="gray20", alpha.col=0.8, alpha.regions=0, legend=FALSE, lwd=0.2, lty=2) +
+  mapview(catch_final, color="black", alpha.col=0.8, col.regions=NA, legend=FALSE, lwd=0.6) +
+  mapview(evans, layer.name="Evans Streamline", color="cyan4", legend=FALSE) +
+  mapview(lsh_springs,layer.name="Springs", col.regions="cyan4")
+```
+
+
+We subtracted the original drainage area (sqkm) associated with each COMID of interest from the revised (new) drainage area, and converted this proportional change to a percentage (`area_sqkm_orig - area_sqkm_new)/areasqkm_orig) * 100`).
+
+There was little or no difference in the watersheds to the north and the upstream most segments (e.g., COMIDs 3917198, 3917200, 3917148). The segment immediately upstream of COMID 3917198 (COMID 3917918) has a **total drainage area of 145.01**.
+
+Therefore, moving downstream, we can cumulatively add each of our new drainage areas to the overall total, and compare the differences.
+
+### Updated Drainage Areas
+
+```{r}
+
+df_da_final %>% st_drop_geometry %>% select(2:7) %>% 
+  arrange(comid_f) %>% 
+  knitr::kable(col.names = c("COMID", "Local CatchArea (new)", "Total Drainage Area (sqkm)", "Diverted DA (sqkm)", "Revised Total DA (sqkm)", "% Diff"))
+
+```
+
+## FF Metrics
+
+The functional flow metrics were pulled using the R calculator and predictions for the unrevised metrics are shown below.
+
+```{r dataTablePreds, eval=TRUE}
+
+lshasta_ffc_preds <- read_csv(here("data_output/lshasta_ffc_predictions.csv")) %>% 
+  mutate(comid_f = factor(as.character(comid),
+                              levels=c(3917198, 3917200, 3917948,
+                                       3917950, 3917244, 3917946)))
+DT::datatable(lshasta_ffc_preds) %>% 
+    DT::formatRound(columns=c('p10', 'p25', 'p50', 'p75', 'p90'), digits=1)
+```
+
+
+If we plot these to make it a bit easier to see, we can observe the lower three segments (COMIDs 3917950, 3917277, and 3917946) are a magnitude of order different, likely because they are including inputs from the canals.
+
+
+```{r}
+lshasta_ffc_preds <- lshasta_ffc_preds %>% 
+  mutate(flow_component = factor(flow_component, levels = c("Fall pulse flow", "Wet-season baseflow", "Peak flow", "Spring recession flow", "Dry-season baseflow", "General")),
+         metric = as.factor(metric),
+         metric = fct_reorder2(metric, flow_component, metric))
+
+# plot
+library(ggdark)
+library(ggthemes)
+# peak metrics
+ggplot() + geom_point(data=lshasta_ffc_preds %>% 
+                        filter(flow_component=="Peak flow"), aes(x=metric, y=p50, color=comid_f), size=4) + 
+  coord_flip() +
+  scale_color_viridis_d("COMID") +
+  scale_y_log10() +
+  labs(y="Log scale (p50)", subtitle="Peak Flows") +
+  ggdark::dark_theme_light()
+
+# spring metrics
+ggplot() + geom_point(data=lshasta_ffc_preds %>% filter(flow_component=="Spring recession flow", metric!="SP_ROC"), aes(x=metric, y=p50, fill=comid_f),
+                      size=4, pch=21, color="gray20", alpha=0.8) +
+  coord_flip() +
+  scale_fill_viridis_d("COMID") +
+  labs(subtitle="Spring Recession Flows") +
+  ggdark::dark_theme_light()
+
+# recession rate is identical for all
+ggplot() + geom_point(data=lshasta_ffc_preds %>% filter(flow_component=="Fall pulse flow"), aes(x=metric, y=p50, fill=comid_f),
+                      size=4, pch=21, color="gray20", alpha=0.8) +
+  coord_flip() +
+  scale_y_log10() +
+  labs(y="Log scale (p50)", subtitle="Fall Pulse Flows") +
+  scale_fill_viridis_d("COMID") +
+  ggdark::dark_theme_light()
+
+```
+
