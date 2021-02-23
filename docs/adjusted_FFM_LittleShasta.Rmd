@@ -2,11 +2,11 @@
 title: "Adjusted FFMs"
 output: 
     html_document:
-    highlight: pygments
-    theme: yeti
-    toc: yes
-    toc_float: yes
-    code_folding: hide
+      highlight: pygments
+      theme: yeti
+      toc: yes
+      toc_float: yes
+      code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -16,17 +16,23 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
 library(sf)
 library(tidyverse)
 library(mapview)
-library(tmap)
-library(tmaptools)
 library(glue)
 library(here)
-library(mapedit)
-library(leafpm)
 mapviewOptions(fgb=FALSE)
 
 ```
 
 Functional flow metrics were adjusted based on revised watershed areas to correct for the revised catchments.
+
+## Original NHDPlus Catchment Map
+
+The original map delineated a basin and associated catchments far south of the actual Little Shasta.
+
+```{r printBasicMapOrig, out.width='100%'}
+
+knitr::include_graphics(here("figs/map_of_flowlines_existing_vs_cleaned.png"))
+
+```
 
 ## Revised Catchments
 
@@ -95,11 +101,11 @@ mapview(df_da_final, zcol="comid_f", lwd=4, layer.name="AOI Comids") +
 
 We subtracted the original drainage area (sqkm) associated with each COMID of interest from the revised (new) drainage area, and converted this proportional change to a percentage (`area_sqkm_orig - area_sqkm_new)/areasqkm_orig) * 100`).
 
-There was little or no difference in the watersheds to the north and the upstream most segments (e.g., COMIDs 3917198, 3917200, 3917148). The segment immediately upstream of COMID 3917198 (COMID 3917918) has a **total drainage area of 145.01**.
-
-Therefore, moving downstream, we can cumulatively add each of our new drainage areas to the overall total, and compare the differences.
+There was little or no difference in the watersheds to the north and the upstream most segments (e.g., COMIDs 3917198, 3917200, 3917148). The segment immediately upstream of COMID 3917198 (COMID 3917918) has a **total drainage area of 145.01**. Therefore, moving downstream, we can cumulatively add each of our new drainage areas to the overall total starting downstream of that segment and compare the differences.
 
 ### Updated Drainage Areas
+
+This table shows the updated drainage areas, including the locally calculated catchment area (the new combined catchments that are all the same color in the map), the total drainage area (original), the diverted drainage area, and the revised drainage area. The percentage difference is the difference between revised and original drainage areas. Noticeably there's very little difference in the upper three watersheds, and then the same amount of difference between the total drainage area and diverted drainage area (327 sqkm) in all three. Thus the differences in % are primarily all due to the diverted drainage area, through there are slight differences due in changes to the local catchment area.
 
 ```{r}
 
@@ -111,56 +117,232 @@ df_da_final %>% st_drop_geometry %>% select(2:7) %>%
 
 ## FF Metrics
 
-The functional flow metrics were pulled using the R calculator and predictions for the unrevised metrics are shown below.
+The functional flow metrics were pulled using the R calculator and predictions for the un-revised metrics are shown below.
 
 ```{r dataTablePreds, eval=TRUE}
 
 lshasta_ffc_preds <- read_csv(here("data_output/lshasta_ffc_predictions.csv")) %>% 
   mutate(comid_f = factor(as.character(comid),
                               levels=c(3917198, 3917200, 3917948,
-                                       3917950, 3917244, 3917946)))
+                                       3917950, 3917244, 3917946))) %>% 
+  select(-c(starts_with("observed"), comid)) %>% 
+  relocate(comid_f, .before = p10)
+
 DT::datatable(lshasta_ffc_preds) %>% 
     DT::formatRound(columns=c('p10', 'p25', 'p50', 'p75', 'p90'), digits=1)
 ```
 
 
-If we plot these to make it a bit easier to see, we can observe the lower three segments (COMIDs 3917950, 3917277, and 3917946) are a magnitude of order different, likely because they are including inputs from the canals.
+### Plotting FFM
 
+If we plot these to make it a bit easier to see, we can observe the lower three segments (COMIDs 3917950, 3917277, and 3917946) are a magnitude of order different, likely because they are including inputs from the canals. Below are magnitude metrics.
 
-```{r}
+<br>
+
+```{r peakflows, fig.cap="Magnitude Flows (on a log scale).", out.width="100%"}
 lshasta_ffc_preds <- lshasta_ffc_preds %>% 
-  mutate(flow_component = factor(flow_component, levels = c("Fall pulse flow", "Wet-season baseflow", "Peak flow", "Spring recession flow", "Dry-season baseflow", "General")),
+  mutate(flow_component = factor(flow_component, levels = c("Fall pulse flow", "Wet-season baseflow", "Peak flow", "Spring recession flow", "Dry-season baseflow")),
          metric = as.factor(metric),
          metric = fct_reorder2(metric, flow_component, metric))
 
 # plot
 library(ggdark)
 library(ggthemes)
+library(cowplot)
+
 # peak metrics
-ggplot() + geom_point(data=lshasta_ffc_preds %>% 
-                        filter(flow_component=="Peak flow"), aes(x=metric, y=p50, color=comid_f), size=4) + 
+p1 <- ggplot() + geom_jitter(data=lshasta_ffc_preds %>% 
+                        filter(metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                                             "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")), aes(x=metric, y=p50, color=comid_f), size=4, width = .2) + 
   coord_flip() +
   scale_color_viridis_d("COMID") +
-  scale_y_log10() +
-  labs(y="Log scale (p50)", subtitle="Peak Flows") +
+  scale_y_log10() + 
+  #facet_wrap(metric~.)+
+  labs(y="Log scale (p50)", subtitle="Magnitude Flows") +
   ggdark::dark_theme_light()
 
-# spring metrics
-ggplot() + geom_point(data=lshasta_ffc_preds %>% filter(flow_component=="Spring recession flow", metric!="SP_ROC"), aes(x=metric, y=p50, fill=comid_f),
-                      size=4, pch=21, color="gray20", alpha=0.8) +
-  coord_flip() +
-  scale_fill_viridis_d("COMID") +
-  labs(subtitle="Spring Recession Flows") +
-  ggdark::dark_theme_light()
-
-# recession rate is identical for all
-ggplot() + geom_point(data=lshasta_ffc_preds %>% filter(flow_component=="Fall pulse flow"), aes(x=metric, y=p50, fill=comid_f),
-                      size=4, pch=21, color="gray20", alpha=0.8) +
-  coord_flip() +
-  scale_y_log10() +
-  labs(y="Log scale (p50)", subtitle="Fall Pulse Flows") +
-  scale_fill_viridis_d("COMID") +
-  ggdark::dark_theme_light()
+p1
 
 ```
+
+
+```{r recession, fig.cap="Timing Metrics", out.width="100%"}
+# timing metrics (DS_Timing is 1 day different across all comids, so it was dropped)
+p2a <- ggplot() + geom_jitter(data=lshasta_ffc_preds %>% 
+                               filter(metric %in% c("SP_Tim")), aes(x=metric, y=p50, fill=comid_f),
+                      size=4, pch=21, color="gray20", alpha=0.8, width=.2, show.legend=F) +
+  coord_flip() +
+  scale_fill_viridis_d("COMID") +
+  #facet_grid(.~metric, scales = "free_x")+
+  labs(subtitle="Spring Timing", y="p50 (days)") +
+  ggdark::dark_theme_light()
+
+
+p2b <- ggplot() + geom_jitter(data=lshasta_ffc_preds %>% 
+                                filter(metric %in% c("FA_Tim")), 
+                              aes(x=metric, y=p50, fill=comid_f),
+                              size=4, pch=21, color="gray20", alpha=0.8, width=.2, show.legend=T) +
+  coord_flip() +
+  scale_fill_viridis_d("COMID") +
+  #facet_grid(.~metric, scales = "free_x")+
+  labs(subtitle="Fall Timing", y="p50 (days)") +
+  ggdark::dark_theme_light() +
+  theme(legend.position = c(0.85, 0.82),
+        legend.text = element_text(size=8))
+
+plot_grid(p2a, p2b, ncol=2)
+
+```
+
+### Adjusted Flow Metrics
+
+We can now adjust metrics (plotted above) using the percentages calculated in the difference between drainage areas.
+
+```{r ffmAdjust, echo=T, eval=F}
+
+# most downstream: 66%
+ffc_3917946 <- lshasta_ffc_preds %>% 
+  filter(comid_f=="3917946", 
+         metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                       "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")) %>% 
+  mutate(across(c(starts_with("p")), ~(.x-(.x*.66)), .names="adj_{.col}")) %>% 
+  # rearrange names
+  select(comid_f, p10, adj_p10, p25, adj_p25, p50, adj_p50, 
+         p75, adj_p75, p90, adj_p90, source:flow_component)
+
+# 67%
+ffc_3917244 <- lshasta_ffc_preds %>% 
+  filter(comid_f=="3917244", 
+         metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                       "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")) %>% 
+  mutate(across(c(starts_with("p")), ~(.x-(.x*.67)), .names="adj_{.col}")) %>% 
+    # rearrange names
+  select(comid_f, p10, adj_p10, p25, adj_p25, p50, adj_p50, 
+         p75, adj_p75, p90, adj_p90, source:flow_component)
+
+# Montague connection: 69%
+ffc_3917950 <- lshasta_ffc_preds %>% 
+  filter(comid_f=="3917950", 
+         metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                       "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")) %>% 
+  mutate(across(c(starts_with("p")), ~(.x-(.x*.69)), .names="adj_{.col}")) %>% 
+    # rearrange names
+  select(comid_f, p10, adj_p10, p25, adj_p25, p50, adj_p50, 
+         p75, adj_p75, p90, adj_p90, source:flow_component)
+
+# just upstream of montague: 10%
+ffc_3917948 <- lshasta_ffc_preds %>% 
+  filter(comid_f=="3917948", 
+         metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                       "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")) %>% 
+  mutate(across(c(starts_with("p")), ~(.x+(.x*.1)), .names="adj_{.col}")) %>% 
+    # rearrange names
+  select(comid_f, p10, adj_p10, p25, adj_p25, p50, adj_p50, 
+         p75, adj_p75, p90, adj_p90, source:flow_component)
+
+# : 05%
+ffc_3917200 <- lshasta_ffc_preds %>% 
+  filter(comid_f=="3917200", 
+         metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                       "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")) %>% 
+  mutate(across(c(starts_with("p")), ~(.x-(.x*.05)), .names="adj_{.col}")) %>% 
+    # rearrange names
+  select(comid_f, p10, adj_p10, p25, adj_p25, p50, adj_p50, 
+         p75, adj_p75, p90, adj_p90, source:flow_component)
+
+ffc_3917198 <- lshasta_ffc_preds %>% 
+  filter(comid_f=="3917198", 
+         metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                       "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")) %>% 
+  mutate(across(c(starts_with("p")), ~(.x-(.x*.001)), .names="adj_{.col}")) %>% 
+    # rearrange names
+  select(comid_f, p10, adj_p10, p25, adj_p25, p50, adj_p50, 
+         p75, adj_p75, p90, adj_p90, source:flow_component)
+
+# combine all and put into table:
+ffc_adjusted <- bind_rows(ffc_3917198, ffc_3917200, ffc_3917948, ffc_3917950, ffc_3917244, ffc_3917946)
+# write_csv(ffc_adjusted, file="data_output/lshasta_ffc_adjusted.csv")
+# write_rds(ffc_adjusted, file="data_output/lshasta_ffc_adjusted.rds")
+
+```
+
+```{r ffcAdjTable}
+ffc_adjusted <- read_rds("data_output/lshasta_ffc_adjusted.rds")
+
+DT::datatable(ffc_adjusted) %>% 
+    DT::formatRound(columns=c('p10', 'p25', 'p50', 'p75', 'p90', 'adj_p10', 'adj_p25', 'adj_p50', 'adj_p75','adj_p90'), digits=1)
+
+```
+
+### And Adjusted FFC Plots
+
+Now plot with the adjusted metrics:
+
+```{r logscalePlot, eval=T, echo=F, out.width="100%"}
+ffc_adjusted <- ffc_adjusted %>% 
+  mutate(flow_component = factor(flow_component, levels = c("Fall pulse flow", "Wet-season baseflow", "Peak flow", "Spring recession flow", "Dry-season baseflow")),
+         metric = as.factor(metric),
+         metric = fct_reorder2(metric, flow_component, metric))
+
+# plot
+library(ggdark)
+library(ggthemes)
+library(cowplot)
+
+# peak metrics
+p3 <- ggplot() + geom_jitter(data=ffc_adjusted %>% 
+                        filter(metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                                             "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")), aes(x=metric, y=adj_p50, color=comid_f), size=4, width = .2) + 
+  coord_flip() +
+  scale_color_viridis_d("COMID") +
+  scale_y_log10() + 
+  labs(y="logscale p50 (cfs)", subtitle="Magnitude: Adjusted") +
+  ggdark::dark_theme_light()
+
+# peak metrics
+p3b <- ggplot() +   geom_jitter(data=ffc_adjusted %>% 
+                                  filter(metric %in% c("Peak_2", "Peak_5", "Peak_10",
+                                                       "SP_Mag","FA_Mag",
+                                                       "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")), 
+                                aes(x=metric, y=p50, color=comid_f), pch=21, size=2, width = .2) +
+  coord_flip() +
+  scale_color_viridis_d("COMID") +
+  scale_y_log10() + 
+  labs(y="logscale p50 (cfs)", subtitle="Magnitude: Original") +
+  ggdark::dark_theme_light()
+
+plot_grid(p3, p3b, nrow=2)
+
+```
+
+Now non-logscale: 
+
+```{r Plot4, eval=T, echo=F, out.width="100%"}
+
+# peak metrics
+p4 <- ggplot() + geom_jitter(data=ffc_adjusted %>% 
+                        filter(metric %in% c("Peak_2", "Peak_5", "Peak_10", "SP_Mag","FA_Mag",
+                                             "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")), aes(x=metric, y=adj_p50, color=comid_f), size=4, width = .2) + 
+  coord_flip() +
+  scale_color_viridis_d("COMID") +
+  #scale_y_log10() + 
+  labs(y="p50 (cfs)", subtitle="Magnitude: Adjusted") +
+  ggdark::dark_theme_light()
+
+# peak metrics
+p4b <- ggplot() +   geom_jitter(data=ffc_adjusted %>% 
+                                  filter(metric %in% c("Peak_2", "Peak_5", "Peak_10",
+                                                       "SP_Mag","FA_Mag",
+                                                       "DS_Mag_50", "DS_Mag_90", "Wet_BFL_Mag_10")), 
+                                aes(x=metric, y=p50, color=comid_f), pch=21, size=2, width = .2) +
+  coord_flip() +
+  scale_color_viridis_d("COMID") +
+  #scale_y_log10() + 
+  labs(y="p50 (cfs)", subtitle="Magnitude: Original") +
+  ggdark::dark_theme_light()
+
+plot_grid(p4, p4b, nrow=2)
+
+```
+
 
