@@ -82,20 +82,23 @@ df_da_final$comid_f <- factor(as.character(df_da_final$comid),
 
 # path to database:
 db <- glue("{here()}/data/nhdplus_little_shasta.gpkg")
-
+#st_layers(db)
 # original catchments
 catch_orig <- st_read(db, "catchments_ls_nhdplus18", quiet = TRUE)
+gage <- st_as_sf(data.frame("lon"=-122.350357, "lat"=41.733093, "name"="LSH"), coords=c("lon", "lat"), crs=4326)
 
 ```
 
-```{r, echo=F}
+```{r, echo=F, out.width="100%"}
 mapview(df_da_final, zcol="comid_f", lwd=4, layer.name="AOI Comids") +
   mapview(df_catch_diss, zcol="comid_f", layer.name="Revised Catchments") +
   mapview(flowlines_map, color="cyan4", legend=F, lwd=0.5) +
+  mapview(gage, col.regions="black", color="white", cex=5, layer.name="GAGE") +
  # mapview(catch_orig, color="gray20", alpha.col=0.8, alpha.regions=0, legend=FALSE, lwd=0.2, lty=2) +
   mapview(catch_final, color="black", alpha.col=0.8, col.regions=NA, legend=FALSE, lwd=0.6) +
   mapview(evans, layer.name="Evans Streamline", color="cyan4", legend=FALSE) +
   mapview(lsh_springs,layer.name="Springs", col.regions="cyan4")
+
 ```
 
 
