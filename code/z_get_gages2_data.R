@@ -7,7 +7,7 @@ library(tidyverse)
 # Get Data ----------------------------------------------------------------
 
 durl <- "https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip"
-#webpath <- durl
+webpath <- durl
 
 get_shp_zip <- function(webpath){
 
@@ -26,9 +26,14 @@ get_shp_zip <- function(webpath){
   shp_file <- list.files(dest_dir, pattern = ".shp$", full.names=TRUE)
   # read it in!
   st_read(shp_file)
+
+  # rm temp files
+
 }
 
 gages2 <- get_shp_zip(durl)
+
+mapview::mapview(gages2)
 
 # filter for gage of interest:
 gages2_filt <- gages2 %>% filter(STAID %in% c("11516900"))
