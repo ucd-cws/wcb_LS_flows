@@ -1,0 +1,167 @@
+---
+title: "Recalculating FFM"
+description: |
+  Steps to recalculate FFM using new/revised flow network
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_depth: 5
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning=FALSE, 
+                      message=FALSE)
+
+library(xaringanExtra)
+library(tidyverse)
+library(here)
+
+```
+
+## Map Overview 🗺
+
+The original map delineated a basin and associated catchments far south of the actual Little Shasta. Watershed catchments were based on NHDPlus catchments, and bounded by the HUC10 for the Little Shasta. This meant several small catchment edges were "trimmed", as some of the sub-catchments extended outside of the HUC10. 
+
+```{r panelset, echo=FALSE}
+xaringanExtra::use_panelset()
+```
+
+::: {.l-body-outset}
+::: {.panelset}
+::: {.panel}
+
+##  Original NHD Map {.panel-name}
+
+```{r printBasicMapOrig, out.width='100%'}
+
+knitr::include_graphics(here("figs/map_of_flowlines_existing_vs_cleaned.png"))
+
+```
+
+:::
+
+::: {.panel}
+## Revised Catchment Map {.panel-name}
+
+Map of revised catchments with springs and gage locations.
+
+```{r, out.width="100%",echo=FALSE ,fig.align = 'center'}
+
+knitr::include_graphics(here("figs/map_of_h10_w_COMID_catch_w_AOIsegs.jpg"))
+
+```
+:::
+
+::: {.panel}
+## DEM Map {.panel-name}
+
+DEM Map of the Little Shasta watershed.
+
+```{r printBasicDEM, out.width='100%'}
+
+knitr::include_graphics(here("figs/lshasta_dem_clean_streamline.png"))
+
+```
+
+:::
+:::
+:::
+
+### Revised Catchments ✂️
+
+We lumped catchments associated with the lower 6 COMID as follows. The selected areas of interest (AOI) were: `3917946, 3917950, and 3917198`.
+
+```{r printBasicMap, layout="l-body-outset", fig.height=6}
+
+# knitr::include_graphics(here("figs/map_of_h10_w_COMID_catch_w_AOIsegs.jpg"))
+
+library(sf)
+library(fs)
+library(mapview)
+mapviewOptions(fgb=FALSE, basemaps=c("Esri.WorldTopoMap", "Esri.WorldImagery",
+                                     "OpenTopoMap", "OpenStreetMap",
+                                     "CartoDB.Positron", "Stamen.TopOSMFeatures"))
+
+# all data: catch_h10, evans, flowlines, h10, lsh_springs
+load(here("data_output","little_shasta_catchment_flowlines.rda"))
+
+# reduce fields
+flowlines_map <- flowlines %>% select(id, comid, hydroseq, gnis_name, areasqkm:divdasqkm, shape_length, streamorde, streamorder_map, streamcalc)
+
+# updated catchment areas # catch_final, df_catch_diss, df_da_final, df_coms (all attribs, n=142)
+load(here("data_output/06_catcharea_final_adjust.rda"))
+aoi_comid <- df_da_final %>% filter(comid %in% c(3917946, 3917950, 3917198))
+
+# reorder factors
+df_da_final$comid_f <- factor(as.character(df_da_final$comid),
+                              levels=c(3917198, 3917200, 3917948,
+                                       3917950, 3917244, 3917946))
+# path to database:
+db <- here("data/nhdplus_little_shasta.gpkg")
+
+# original catchments
+catch_orig <- st_read(db, "catchments_ls_nhdplus18", quiet = TRUE)
+
+# LSR GAGE
+gage_lsr <- st_as_sf(data.frame("lon"=-122.350357, "lat"=41.733093, "SiteName"="LSR", "SiteAgency"="UCD"), coords=c("lon", "lat"), crs=4326, remove=FALSE)
+
+# other gage stations
+gages_act <- read_csv(here("data", "nwis_surface_water_active.csv")) %>%
+  st_as_sf(coords=c("SiteLongitude","SiteLatitude"), crs=4326, remove=FALSE)
+gages_inact <- read_csv(here("data", "nwis_surface_water_inactive.csv")) %>%
+  st_as_sf(coords=c("SiteLongitude","SiteLatitude"), crs=4326, remove=FALSE)
+
+# filter to just stations of interest
+gages <- gages_act %>% filter(SiteNumber=="11517000") %>% bind_rows(., filter(gages_inact, SiteNumber=="11516900")) %>% select(SiteNumber, SiteName, SiteAgency, lon=SiteLongitude, lat=SiteLatitude) %>%
+  bind_rows(., gage_lsr)
+
+# add name
+gages <- gages %>%
+  mutate(Name = c("SHA", "LSH", "LSR"))
+
+# Mapview Preview ---------------------------------------------------------
+
+mapview(aoi_comid, color="coral1", lwd=4, layer.name="AOI Comids") +
+  mapview(df_catch_diss, zcol="comid_f", alpha.regions=0.4, layer.name="Revised Catchments") +
+  mapview(flowlines_map, color="cyan4", legend=F, lwd=0.5) +
+  mapview(gages, col.regions="black", color="white", cex=5, layer.name="Gages") +
+  mapview(catch_final, color="black", alpha.col=0.8, col.regions=NA, legend=FALSE, lwd=0.6) +
+  mapview(evans, layer.name="Evans Streamline", color="cyan4", legend=FALSE) +
+  mapview(lsh_springs,layer.name="Springs", col.regions="cyan4")
+
+
+```
+
+Some of these combinations were largely the same as already attributed by NHD. However, some of the southwest catchments were combined based on groundwater mapping data, and the low-lying elevation, which is largely flat in the southwest part of the watershed (See **DEM Map**).
+
+
+# Steps to Regenerate FF Models 💻
+
+To regenerate the functional flow models, we need to complete the following steps:
+
+ 1. Pull NHD v2 catchment/attribute data from National ScienceBase database (includes hydrology, climate, soils, geology, etc). Currently this is for the entire US. (Some code exists to download this currently in R). *Completed by Ryan*
+ 2. Filter these data to JUST the COMIDs of interest (I think we need all the revised stream network COMIDs from the Little Shasta watershed). No code base exists to do this yet. *This is ongoing*
+ 3. Run accumulation code to generate accumulation stats for each COMID (*this is ongoing conversation with TNC with Kirk et al.*)
+ 4. Data from the previous steps is used in the random forest predictive flow models. *Ted will run*
+ 5. Once predicted flows have been generated, we can re-run the FFC with our observed data to calculate metrics and assess alteration.
+
+## NHDPlus Catchment Attributes
+
+We downloaded the NHDPlus attributes with a custom script, and then filtered to the COMIDs associated with the revised Little Shasta River. There are many variables that the NHDPlus_accumulated attributes contain (see [ScienceBase site here](https://www.sciencebase.gov/catalog/item/5669a79ee4b08895842a1d47) for full download).
+
+The key pieces of interest were:
+
+ - Topographic Attributes (Basin Characteristics, drainage area, slope, elev mean/min/max/range)
+    - `BASIN_CHAR_CAT_CONUS.TXT`
+    - `BASIN_CHAR_ACC_CONUS.TXT`
+ - ET, PET, RH
+ - Soils
+ - Geology ()
+ - Hydrologic Attributes (Precip)
+ - Climate_Water Attributes (Temp, runoff)
+
+# Next Steps
