@@ -46,3 +46,9 @@ vignettes/*.pdf
 
 # nhd attribs
 data_output/nhdplus
+
+# shps
+#*.shp
+#*.shx
+#*.dbf
+#*.prj

@@ -2,11 +2,9 @@
 
 library(tidyverse)
 library(vroom)
-library(archive)
+# library(archive)
 library(fs)
 library(glue)
-library(here)
-library(lubridate)
 library(sf)
 library(mapview)
 mapviewOptions(fgb=FALSE)
@@ -18,8 +16,8 @@ flowlines_final <- flowlines_final %>% mutate(comid_f = as.factor(comid))
 catch_final <- read_rds(file = "data_output/08_catchments_final_lshasta.rds") %>%
   mutate(upper = ifelse(is.na(upper), FALSE, upper))
 
-mapview(flowlines_final, zcol="comid_f", layer.name="COMID", legend=FALSE) +
-  mapview(catch_final, zcol="upper", layer.name="Catch", legend =FALSE)
+#mapview(flowlines_final, zcol="comid_f", layer.name="COMID", legend=FALSE) +
+#  mapview(catch_final, zcol="upper", layer.name="Catch", legend =FALSE)
 
 # n=52 unique COMIDs
 coms <- unique(flowlines_final$comid)
@@ -31,15 +29,16 @@ dat_dir <- "/Volumes/GENOMICS/NHDplus_Accumulated_attributes"
 dir_exists(dat_dir)
 
 # the subdir
-subfold_dir <- ("Climate_Attributes")
-
-#subfile_name <- "PRSNOW_CONUS"
+# subfold_dir <- ("Climate_Attributes")
+# subfold_dir <- ("Climate_Water")
+# subfold_dir <- ("Geologic_Attributes")
+# subfold_dir <- ("Hydrologic_Attributes")
+# subfold_dir <- ("Regional_Attributes")
+# subfold_dir <- ("Soil_Attributes")
+subfold_dir <- ("Topographic_Attributes")
 
 # file exists?
-#list.files(path = glue("{dat_dir}/{subfold_dir}/{subsub}"), pattern = glue("^{subfile_name}*"))
-#file_size(glue("{dat_dir}/{subfold_dir}/{subsub}/{subfile_name}.txt"))
 #file_size(glue("{dat_dir}/{subfold_dir}/{subsub}/{subfile_name}.zip"))
-
 
 # Function to Get List of Zips --------------------------------------------
 
@@ -52,35 +51,35 @@ get_zip_list <- function(folder, extension){
     dplyr::mutate(filename = fs::path_file(path))
 }
 
-tst <- get_zip_list(glue("{dat_dir}/{subfold_dir}"), "*zip")
-
+ziplist <- get_zip_list(glue("{dat_dir}/{subfold_dir}"), "*zip")
+ziplist
 
 # Function to Filter to Specific COMIDS ----------------------------------
 
 comid_filter <- function(comids, fullpath){
   library(purrr)
   f1 <- vroom(fullpath) %>% # fast readin of zips
+    dplyr::rename_with(., toupper) %>%
     dplyr::filter({if("COMID" %in% names(.)) COMID else NULL} %in% comids)
 }
 
 # test the function
-# ftst <- comid_filter(coms, tst[1,]$path) # it works!
+# ftst <- comid_filter(coms, ziplist[1,]$path) # it works!
 
 # Implement ---------------------------------------------------------------
 
-alldat <- map(tst$path, ~comid_filter(coms, .x))
+alldat <- map(ziplist$path, ~comid_filter(coms, .x))
 
 # check dimensions (one way to filter out zeros)
-map(alldat, ~dim(.x))
 map(alldat, ~nrow(.x)>0)
 
 # set names
-alldat_src <- alldat %>% set_names(fs::path_ext_remove(tst$filename)) %>%
+alldat_src <- alldat %>% set_names(fs::path_ext_remove(ziplist$filename)) %>%
   imap(., ~ add_column(.x, source = .y))
 names(alldat_src)
 
 # check source in everything?
-map_depth(alldat_src, .depth = 1, ~head(.x))
+# map_depth(alldat_src, .depth = 1, ~head(.x))
 
 # drop data with zero rows
 alldat_filt <- discard( alldat_src, ~nrow(.x)==0)
@@ -97,7 +96,6 @@ comid_writeout <- function(data, fileName){
 # now run all
 pmap(list(alldat_filt, names(alldat_filt)), ~comid_writeout(.x, .y))
 
-
 # Save into one file ------------------------------------------------------
 
 alldat_combine <- alldat_filt %>% reduce(left_join, by = c("COMID")) %>%
@@ -105,9 +103,6 @@ alldat_combine <- alldat_filt %>% reduce(left_join, by = c("COMID")) %>%
 
 # write out
 write_csv(alldat_combine, file = glue("data_output/little_shasta_{janitor::make_clean_names(subfold_dir)}_comids.csv"))
-
-
-
 
 
 # Z. ARCHIVED: Get Spatial data for COMID List ----------------------------------------------------------
