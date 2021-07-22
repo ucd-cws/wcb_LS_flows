@@ -45,6 +45,7 @@ source("code/f_functions.R")
 
 # look for zips here
 ziplist <- get_zip_list(glue("{dat_dir}/{subfold_dir}"), "*zip")
+#ziplist <- get_zip_list(glue("{dat_dir}"), "*csv")
 ziplist
 
 # Filter to Comids --------------------------------------------------------
@@ -75,7 +76,7 @@ alldat_filt <- discard( alldat_src, ~nrow(.x)==0)
 # Write each file to single csv -----------------------------------------------
 
 # use names of list to make filenames
-pmap(list(alldat_filt, names(alldat_filt)), ~comid_writeout(.x, .y))
+pmap(list(alldat_filt, "data_output/nhdv2", names(alldat_filt)), ~comid_writeout(..1, ..2, ..3))
 
 # Save into one file ------------------------------------------------------
 
