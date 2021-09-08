@@ -8,6 +8,7 @@ library(readr)
 #library(tidyverse)
 library(fs)
 library(here)
+library(glue)
 library(tmap)
 library(tmaptools)
 library(mapview)
@@ -19,13 +20,26 @@ mapviewOptions(fgb=FALSE, basemaps=c("Esri.WorldTopoMap", "Esri.WorldImagery",
 
 # all data: catch_h10, evans, flowlines, h10, lsh_springs
 load(here("data_output","little_shasta_catchment_flowlines.rda"))
+# drop old stuff
+rm(catch_h10)
+
+# path to database:
+db <- glue("{here()}/data/nhdplus_little_shasta.gpkg")
+# layers:
+st_layers(db)
 
 # reduce fields
 flowlines_map <- flowlines %>% select(id, comid, hydroseq, gnis_name, areasqkm:divdasqkm, shape_length, streamorde, streamorder_map, streamcalc)
 
 # updated catchment areas # catch_final, df_catch_diss, df_da_final, df_coms (all attribs, n=142)
 load(here("data_output/06_catcharea_final_adjust.rda"))
-aoi_comid <- df_da_final %>% filter(comid %in% c(3917946, 3917950, 3917198))
+rm(catch_final)
+
+# get updated data
+catch_final <- st_read(db, "lsh_catch_final_adj")
+huc10_final <- st_read(db, "lsh_huc10_final")
+
+loi_comid <- df_da_final %>% filter(comid %in% c(3917946, 3917950, 3917198))
 
 # reorder factors
 df_da_final$comid_f <- factor(as.character(df_da_final$comid),
@@ -38,26 +52,16 @@ st_layers(db)
 # original catchments
 catch_orig <- st_read(db, "catchments_ls_nhdplus18", quiet = TRUE)
 
-# LSR GAGE
-gage_lsr <- st_as_sf(data.frame("lon"=-122.350357, "lat"=41.733093, "SiteName"="LSR", "SiteAgency"="UCD"), coords=c("lon", "lat"), crs=4326, remove=FALSE)
+# USGS GAGE
+gages_usgs <- read_rds(file = "data_output/gages_lshasta.rds") %>%
+   mutate(site_number=as.character(site_number))
 
-# other gage stations
-gages_act <- read_csv("data/nwis_surface_water_active.csv") %>%
-  st_as_sf(coords=c("SiteLongitude","SiteLatitude"), crs=4326, remove=FALSE)
-gages_inact <- read_csv("data/nwis_surface_water_inactive.csv") %>%
-  st_as_sf(coords=c("SiteLongitude","SiteLatitude"), crs=4326, remove=FALSE)
-
-# preview
-#mapview(gage_lsr) + mapview(gages_act, col.regions="green") + mapview(gages_inact, col.regions="yellow")
+# LSR gage
+gage_lsr <- st_as_sf(data.frame("site_longitude"=-122.350357, "site_latitude"=41.733093, "site_name"="LSR", "site_number"="LSR", "site_agency"="UCD"), coords=c("site_longitude", "site_latitude"), crs=4326, remove=FALSE)
 
 # filter to just stations of interest
-gages <- gages_act %>% filter(SiteNumber=="11517000") %>% bind_rows(., filter(gages_inact, SiteNumber=="11516900")) %>% select(SiteNumber, SiteName, SiteAgency, lon=SiteLongitude, lat=SiteLatitude) %>%
-  bind_rows(., gage_lsr)
-
-# add name
-gages <- gages %>%
-  mutate(Name = c("SHA", "LSH", "LSR"))
-#mapview(gages, col.regions="orange")
+gages <- gages_usgs %>% filter(site_number %in% c("11517000","11516900")) %>%
+   bind_rows(gage_lsr)
 
 # get raster data
 lsh_dem <- stars::read_stars("data/lshasta_dem.tif") # raster DEM
@@ -66,7 +70,7 @@ tmap_options(max.raster = c(plot=1e6, view=1e6))
 
 # Mapview Preview ---------------------------------------------------------
 
-mapview(aoi_comid, color="coral1", lwd=4, layer.name="AOI Comids") +
+mapview(loi_comid, color="coral1", lwd=4, layer.name="LOI Comids") +
   mapview(df_catch_diss, zcol="comid_f", alpha.regions=0.4, layer.name="Revised Catchments") +
   mapview(flowlines_map, color="cyan4", legend=F, lwd=0.5) +
   mapview(gages, col.regions="black", color="white", cex=5, layer.name="Gages") +

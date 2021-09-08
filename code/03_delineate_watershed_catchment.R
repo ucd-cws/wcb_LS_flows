@@ -2,8 +2,6 @@
 
 # the catchments don't align with the HUC10, so draw boundaries based on catchments that border/with HUC10.
 
-
-
 # Library -----------------------------------------------------------------
 # see here: https://streamstats.usgs.gov/ss/
 # devtools::install_github("markwh/streamstats")
@@ -87,18 +85,18 @@ ls_catch_final <- ls_catch_revised[ls_catch_inner, , op=st_intersects]
 # good but need to manually add a few using FEATUREID
 catch_to_add <- c(3917928,3917194, 3917082, 3917100)
 
+# bind together
 ls_catch_final <- bind_rows(ls_catch_final,
                             ls_catch_revised %>% filter(FEATUREID %in% catch_to_add))
 
+# map the final version
 mapview(h10, color="maroon", lwd=3, col.regions="maroon", alpha.regions=0) +
   mapview(ls_catch_revised, color="blue", lwd=1, col.regions="blue", alpha.regions=0, layer.name="orig") +
   mapview(ls_catch_final, color="black", lwd=1, col.regions="gray", alpha.regions=0.3, layer.name="final")
 
-
 # GREAT! Now save this
-st_write(ls_catch_final, dsn = db, layer = "lsh_catch_final_adj")
+st_write(ls_catch_final, dsn = db, layer = "lsh_catch_final_adj", delete_layer = TRUE)
 st_layers(db)
-
 
 # ADJUST HUC10 to MATCH ---------------------------------------------------
 
@@ -115,7 +113,7 @@ mapview(h10_adj, lwd=3, color="steelblue",
           alpha.regions=0, layer.name="final")
 
 # write it out!
-st_write(h10_adj, dsn = db, layer = "lsh_huc10_final")
+st_write(h10_adj, dsn = db, layer = "lsh_huc10_final", delete_layer = TRUE)
 st_layers(db)
 
 # STREAMSTATS: Delineate Watershed -----------------------------------------------------
@@ -165,7 +163,7 @@ mapview(lsh_ws) +
 library(elevatr)
 library(sp)
 # make an sp version of the h10
-h10_sp <- as_Spatial(h10)
+h10_sp <- as_Spatial(h10_adj)
 sp::proj4string(h10_sp)
 
 
@@ -201,16 +199,17 @@ ggplot() +
   geom_sf(data=lshasta_clean, color="darkblue")+
   theme(legend.position = "bottom")
 
-#ggsave(filename = "figs/lshasta_dem_clean_streamline.png", width = 11, height = 8, dpi=300, units="in")
-
+ggsave(filename = "figs/lshasta_dem_clean_streamline.png", width = 11, height = 8, dpi=300, units="in")
 
 
 # Plot Tmap version -------------------------------------------------------
 
 library(USAboundaries)
+library(tmap)
+library(tmaptools)
 ca<-us_counties(states="ca")
 tst1 <- stars::read_stars("data/lshasta_dem.tif")
-gm_osm <- read_osm(h10, type = "esri-topo", raster=TRUE)
+gm_osm <- read_osm(h10_adj, type = "esri-topo", raster=TRUE)
 
 tmap_options(max.raster = c(plot=1e8, view=1e6))
 
