@@ -1,11 +1,13 @@
 # delineate watershed
 
-# see here: https://streamstats.usgs.gov/ss/
+# the catchments don't align with the HUC10, so draw boundaries based on catchments that border/with HUC10.
+
+
 
 # Library -----------------------------------------------------------------
-
-#devtools::install_github("markwh/streamstats")
-library(streamstats)
+# see here: https://streamstats.usgs.gov/ss/
+# devtools::install_github("markwh/streamstats")
+# library(streamstats)
 library(sf)
 library(tidyverse)
 library(glue)
@@ -27,15 +29,17 @@ st_layers(db)
 # cleaned little shasta streamlines
 lshasta_clean <- read_sf(db, "lshasta_clean") %>% st_transform(3310)
 st_geometry_type(lshasta_clean)
+
 # make a single linestring version:
 lshasta_linestring <- st_cast(lshasta_clean, "LINESTRING")
 
 # cleaned catchments
 lshasta_catch <- read_sf(db, "lshasta_catchments_clean") %>% st_transform(3310)
+lshasta_catch_all <- read_sf(db, "catchments_ls_nhdplus18") %>% st_transform(3310)
 
 nhd_wb <- read_sf(db, "NHDWaterBody") %>% st_transform(3310)
 h10 <- read_sf(db, "h10_lshasta") %>% st_transform(3310)
-h12 <- read_sf(db, "h12_lshasta") %>% st_transform(3310)
+basin <- read_sf(db, "basin_lshasta") %>% st_transform(3310)
 
 # get streamline end point:
 outpt <- st_line_sample(lshasta_linestring %>% filter(comid=="3917946"), sample = 1)
@@ -45,12 +49,78 @@ outpt <- st_line_sample(lshasta_linestring %>% filter(comid=="3917946"), sample 
 # Quick Mapview -----------------------------------------------------------
 
 # quick preview maps
-mapview(h12, alpha.regions=0.1, color="cyan", layer.name="H12") +
+mapview(basin, alpha.regions=0.1, color="cyan4", layer.name="Basin") +
+  #mapview(nhd_wb, alpha.regions=0.5, color="steelblue", layer.name="Lakes") +
   mapview(lshasta_clean, layer.name="Streamlines", color="darkblue") +
+  mapview(lshasta_catch_all, layer.name="Catchments", color="gray20") +
   mapview(h10, alpha.regions=0.2, color="skyblue", col.regions=NA, layer.name="H10", lwd=2) +
   mapview(outpt, col.regions="red", layer.name="outflow", legend=FALSE)
 
-# Delineate Watershed -----------------------------------------------------
+
+# Select Catchments that Intersect or Touch with HUC10 --------------------
+
+# we need to adjust the boundary of the HUC10 to match the catchments.
+# this is important to permit dealing with re-running accumulation stats based on existing NHD landscape data.
+
+ls_catch_revised <- lshasta_catch_all[h10,] # this selects anything that touches
+ls_catch_clip <- st_intersection(lshasta_catch_all, h10) # this clips
+
+# preview
+(m1 <- mapview(ls_catch_revised, color="gray", lwd=1, lty=2, col.regions="gray", alpha.regions=0.3) +
+    mapview(h10, color="maroon", lwd=2, col.regions="maroon", alpha.regions=0) +
+    mapview(ls_catch_clip, color="steelblue", lwd=1, lty=2, col.regions="steelblue", alpha.regions=0))
+
+# now select the pieces we need...but they all MATCH!
+#st_intersects(ls_catch_revised, ls_catch_clip, sparse = FALSE, join=st_within)
+
+# select only the stuff on the inside...then select anything that touches this
+# from the original layer and should have what we need
+ls_catch_inner <- ls_catch_revised[ls_catch_clip, , op=st_within]
+ls_catch_final <- ls_catch_revised[ls_catch_inner, , op=st_intersects]
+
+# check
+(m2 <- mapview(h10, color="maroon", lwd=3, col.regions="maroon", alpha.regions=0) +
+    mapview(ls_catch_inner, color="yellow", lwd=2, col.regions="yellow", alpha.regions=0.3, layer.name="inner") +
+    mapview(ls_catch_revised, color="blue", lwd=1, col.regions="blue", alpha.regions=0, layer.name="orig") +
+    mapview(ls_catch_final, color="black", lwd=1, col.regions="gray", alpha.regions=0.3, layer.name="final"))
+
+# good but need to manually add a few using FEATUREID
+catch_to_add <- c(3917928,3917194, 3917082, 3917100)
+
+ls_catch_final <- bind_rows(ls_catch_final,
+                            ls_catch_revised %>% filter(FEATUREID %in% catch_to_add))
+
+mapview(h10, color="maroon", lwd=3, col.regions="maroon", alpha.regions=0) +
+  mapview(ls_catch_revised, color="blue", lwd=1, col.regions="blue", alpha.regions=0, layer.name="orig") +
+  mapview(ls_catch_final, color="black", lwd=1, col.regions="gray", alpha.regions=0.3, layer.name="final")
+
+
+# GREAT! Now save this
+st_write(ls_catch_final, dsn = db, layer = "lsh_catch_final_adj")
+st_layers(db)
+
+
+# ADJUST HUC10 to MATCH ---------------------------------------------------
+
+# adjust the HUC10 to match
+h10_adj <- rmapshaper::ms_dissolve(ls_catch_final) %>%
+  select(geom) %>%
+  mutate(huc10="1801020703")
+
+mapview(h10_adj, lwd=3, color="steelblue",
+        col.regions="steelblue", alpha.regions=0, layer.name="H10 Adj") +
+  mapview(h10, color="maroon", lwd=3,
+          col.regions="maroon", alpha.regions=0, layer.name="H10") +
+  mapview(ls_catch_final, color="gray20", lwd=0.7, linetype=2, col.regions="gray",
+          alpha.regions=0, layer.name="final")
+
+# write it out!
+st_write(h10_adj, dsn = db, layer = "lsh_huc10_final")
+st_layers(db)
+
+# STREAMSTATS: Delineate Watershed -----------------------------------------------------
+
+# delineate watershed based on topography using the X/Y of outflow point.
 
 # # convert to lat lon:
 # outpt <- outpt %>% st_transform(4326)
@@ -80,13 +150,12 @@ mapview(h12, alpha.regions=0.1, color="cyan", layer.name="H12") +
 # stats1 <- computeFlowStats(workspaceID = ws1$workspaceID, rcode = "CA", simplify = TRUE)
 
 
-# Manual Watershed --------------------------------------------------------
+## STREAMSTATS: Plot --------------------------------------------------------
 
 lsh_ws <- st_read("data/lshasta_ss_delineation.geojson") # from streamstats
 
 # map
 mapview(lsh_ws) +
-  mapview(h12, alpha.regions=0.1, col.regions="cyan", color="cyan", layer.name="H12") +
   mapview(lshasta_clean, layer.name="Streamlines", color="darkblue") +
   mapview(h10, alpha.regions=0.2, color="maroon", col.regions="maroon", layer.name="H10", lwd=2)
 

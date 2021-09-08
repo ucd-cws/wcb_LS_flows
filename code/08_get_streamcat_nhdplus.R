@@ -1,4 +1,7 @@
-# retrieve NHDPlus Data
+# retrieve NHDV2 Stream Cat Data for specific COMID list
+
+# this requires that the download NHD attributes code has been run,
+# and all data from
 
 library(tidyverse)
 library(vroom)
