@@ -52,3 +52,5 @@ data_output/nhdplus
 #*.shx
 #*.dbf
 #*.prj
+
+figs/*.html
