@@ -1,14 +1,17 @@
 # Stitch the NHDv2 StreamCat data together to match Flow Model Input Sample
 
-library(tidyverse)
+library(purrr)
+library(dplyr)
+library(readr)
 library(vroom)
 library(janitor)
 library(glue)
-
+library(here)
+library(fs)
 
 # Read In Files -----------------------------------------------------------
 
-dat_dir <- "data_output/"
+dat_dir <- here("data_output/")
 dir_exists(dat_dir)
 
 files_to_get <- list.files(path = dat_dir, pattern = "^little_shasta_.*\\.csv$")
@@ -45,8 +48,10 @@ write_csv(dsel, file="data_output/lsh_nhdv2_sample_input_var_names.csv")
 filter(dsel, input %in% dall$all) # only two??
 # all names are slightly_diff...of course
 
-
 # Write it Out ------------------------------------------------------------
 
 write_csv(alldat, file="data_output/lsh_nhdv2_streamcat_vars.csv")
 write_rds(alldat, file="data_output/lsh_nhdv2_streamcat_vars.rds")
+
+
+

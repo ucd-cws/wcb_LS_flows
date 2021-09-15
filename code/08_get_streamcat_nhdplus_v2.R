@@ -1,11 +1,7 @@
 # retrieve NHDV2 Stream Cat Data for specific COMID list
-# pulling data from here: https://www.sciencebase.gov/catalog/item/5669a79ee4b08895842a1d47
-# this requires that the download NHD attributes code has been run,
-# and all data from
 
 library(tidyverse)
 library(vroom)
-# library(archive)
 library(fs)
 library(glue)
 library(sf)
@@ -22,9 +18,6 @@ flowlines_final <- flowlines_final %>%
 
 catch_final <- read_rds(file = "data_output/08_catchments_final_lshasta.rds") %>%
   mutate(upper = ifelse(is.na(upper), FALSE, upper))
-
-# mapview(flowlines_final, zcol="comid_f", layer.name="COMID", legend=FALSE) +
-#   mapview(catch_final, zcol="upper", layer.name="Catch", legend =FALSE)
 
 # n=52 unique COMIDs
 (coms <- unique(flowlines_final$comid))

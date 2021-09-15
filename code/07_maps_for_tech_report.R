@@ -27,7 +27,7 @@ db <- glue("{here()}/data/nhdplus_little_shasta.gpkg")
 st_layers(db)
 
 # reduce fields
-flowlines_map <- flowlines %>% select(id, comid, hydroseq, gnis_name, areasqkm:divdasqkm, shape_length, streamorde, streamorder_map, streamcalc)
+flowlines_map <- flowlines %>% select(id, comid, contains("seq"), hydroseq, gnis_name, areasqkm:divdasqkm, shape_length, streamorde, streamorder_map, streamcalc)
 
 # updated catchment areas # catch_final, df_catch_diss, df_da_final, df_coms (all attribs, n=142)
 load(here("data_output/06_catcharea_final_adjust.rda"))
@@ -70,15 +70,33 @@ tmap_options(max.raster = c(plot=1e6, view=1e6))
 
 # Mapview Preview ---------------------------------------------------------
 
-mapview(loi_comid, color="coral1", lwd=4, layer.name="LOI Comids") +
-  mapview(df_catch_diss, zcol="comid_f", alpha.regions=0.4, layer.name="Revised Catchments") +
+# mapview(loi_comid, color="coral1", lwd=4, layer.name="LOI Comids") +
+  # mapview(df_catch_diss, zcol="comid_f", alpha.regions=0.4, layer.name="Revised Catchments") +
   mapview(flowlines_map, color="darkblue", legend=F, lwd=2) +
-  mapview(gages, col.regions="black", color="white", cex=5, layer.name="Gages") +
+  # mapview(gages, col.regions="black", color="white", cex=5, layer.name="Gages") +
   mapview(catch_final, color=scales::alpha("black",0.2), alpha.regions=0.2, col.regions=NA, legend=FALSE, lwd=0.2) +
-  mapview(evans, layer.name="Evans Streamline", color="darkblue", lwd=1, legend=FALSE) +
-  mapview(lsh_springs,layer.name="Springs", col.regions="cyan4")+
+  # mapview(evans, layer.name="Evans Streamline", color="darkblue", lwd=1, legend=FALSE) +
+  # mapview(lsh_springs,layer.name="Springs", col.regions="cyan4")+
    mapview(h10_ls, col.regions="maroon", alpha.regions=0, color="maroon", lwd=3,
            layer.name="HUC10 Revised", legend=TRUE)
+
+
+# look at hydroseq
+flowlines_map %>% mutate(hydroseq_f = as.factor(hydroseq)) %>%
+mapview(., zcol="hydroseq", legend=T, lwd=2) +
+  mapview(catch_final, zcol="comid_ff", alpha.regions=0.2, legend=FALSE, lwd=0.2)
+
+
+flowlines_map %>%
+  #mutate(uphydroseq = as.factor(uphydroseq)) %>%
+  mapview(., zcol="uphydroseq", legend=T, lwd=2)
+
+catch_final <- catch_final %>%
+  mutate(comid_ff = as.factor(comid))
+
+flowlines_map %>%
+  mapview(., zcol="dnhydroseq", legend=T, lwd=2) +
+  mapview(catch_final, zcol="comid_ff", alpha.regions=0.2, legend=FALSE, lwd=0.2)
 
 # Static Map --------------------------------------------------------------
 
