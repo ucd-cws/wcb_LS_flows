@@ -1,0 +1,142 @@
+---
+title: "igraph test"
+author: "Lucy Andrews"
+date: "9/20/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+# load packages
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(magrittr))
+suppressPackageStartupMessages(library(stringr))
+suppressPackageStartupMessages(library(igraph))
+```
+
+To use this in a watershed, replace the `up_down_df` below with your two-column adjacency/edge dataframe.
+Be sure that column headings match (`up`, `down`) or change the names of column headings throughout this script to match your input dataframe.
+
+```{r}
+# set up two-column edge dataframe
+# columns contain vertices and each full row represents an edge
+# in the Little Shasta watershed, this will be a to-from dataframe with hydroseq values
+# NAs flag terminal values for ease of comparison with network image
+# but are filtered out to create the igraph
+# this drops vertices that do not compose edges (e.g. "U")
+up_down_df <- tribble(
+  ~up, ~down,
+  "Q", NA,
+  "P", "N",
+  "O", "N",
+  "N", "M",
+  "M", NA,
+  "L", "G",
+  "K", "G",
+  "J", "G",
+  "I", "E",
+  "H", "E",
+  "G", "C",
+  "F", "B",
+  "E", "B",
+  "D", "A",
+  "C", "A",
+  "B", "A",
+  "A", NA,
+  "R", "Q",
+  NA, "P",
+  NA, "O",
+  NA, "L",
+  NA, "K",
+  NA, "J",
+  NA, "I",
+  NA, "H",
+  NA, "F",
+  NA, "D",
+  NA, "R",
+  "S", "T",
+  "T", NA,
+  "R", "S",
+  "U", NA,
+  NA, "U"
+  ) %>%
+  filter(!is.na(up) & !is.na(down))
+
+# identify upstream ends
+# upstream ends are the places your paths stop
+# so to run the other direction (upstream --> downstream), you can change what is considered "upstream"
+# or reverse the `all_simple_paths` call below
+# this way of doing it uses the edge dataframe
+# but you can also specify your own upstream ends if you want to
+# and they don't have to be termini if you do that (e.g. you can stop mid-network)
+upstream_ends <- up_down_df %>%
+  filter(!up %in% down) %>%
+  pull(up) %>%
+  unique()
+
+# identify downstream ends
+# upstream ends are the places your paths stop
+# so to run the other direction (upstream --> downstream), you can change what is considered "downstream"
+# or reverse the `all_simple_paths` call below
+# this way of doing it uses the edge dataframe
+# but you can also specify your own downstream ends if you want to
+# and they don't have to be termini if you do that (e.g. you can start mid-network)
+downstream_ends <- up_down_df %>%
+  filter(!down %in% up) %>%
+  pull(down) %>%
+  unique()
+```
+
+```{r}
+# turn edge dataframe into matrix for igraph conversion
+up_down_matrix <- up_down_df %>%
+  as.matrix()
+
+# convert edge matrix to igraph
+# note that directionality isn't attributed in the igraph object
+# directionality is implicit when paths are created using upstream and downstream ends
+# creating an igraph object without directionality allows for upstream path creation
+test_igraph <- graph_from_edgelist(up_down_matrix, directed = FALSE)
+
+# double check visually
+plot(test_igraph)
+```
+
+```{r}
+# compute all simple paths between downstream ends and upstream ends
+# and store them in a list of igraph paths
+hold_paths <- lapply(downstream_ends,
+                     function(x) all_simple_paths(test_igraph,
+                                                  from = x,
+                                                  to = upstream_ends))
+
+# unplist igraph paths
+hold_paths <- unlist(hold_paths, recursive = F)
+
+# drop unused information like geodesic attributes from igraph paths
+paths <- lapply(1:length(hold_paths), function(x) as_ids(hold_paths[[x]]))
+
+# turn list of paths into dataframe
+paths_df <- as.data.frame(as.matrix(paths)) %>%
+  set_colnames("paths_lst") %>%
+  rowid_to_column(var = "row_id")
+
+# create final dataframe of paths that has
+# changing the `collapse` argument will change the separator in the path strings
+paths_df_clean <- unnest(paths_df, paths_lst) %>%
+  group_by(row_id) %>%
+  mutate(paths_chr = paste0(paths_lst, collapse = " ")) %>%
+  select(row_id, paths_chr) %>%
+  unique() %>%
+  mutate(downstream_end = str_sub(paths_chr, 1, 1),
+         upstream_end = str_sub(paths_chr, -1, -1)) %>%
+  left_join(paths_df, by = "row_id") %>%
+  select(row_id, downstream_end, upstream_end, paths_chr, paths_lst)
+```
+
+
+```{r}
+# take a look at the output dataframe
+paths_df_clean
+```
