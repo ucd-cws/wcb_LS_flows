@@ -114,7 +114,7 @@ up_down_df <- tribble(
 
 ### Little Shasta Network
 
-```{r getadj-ex}
+```{r getadj-lsh}
 
 library(nhdplusTools)
 
@@ -129,22 +129,25 @@ midpts <- st_point_on_surface(flowlines_map_trim)
 
 mapview(starts, zcol="hydroseq", legend=FALSE,
         layer.name="Starts") + 
-  mapview(flowlines_map_trim) +
+  mapview(flowlines_map_trim, legend=FALSE) +
+  mapview(flowlines_map) +
   mapview(midpts, col.regions="green", cex=3)
 
 # get matrix
-up_down_df <-
+up_down_lsh <-
   midpts %>% st_drop_geometry() %>% 
   select(up = hydroseq,
          down = dnhydroseq) %>%
   # fix the downstream end: 10020426 to NA
   mutate(down = case_when(
-    up == 10020426 ~ NA_real_,
+    up == 10020426 ~ 0, # this is OUTLET
     TRUE ~ down)) %>% 
-  filter(!is.na(down))
+  filter(!is.na(down)) # make sure no NAs
+
+# spur at ds end is: 10135201, penultimate seg: 10020862
 
 # tst
-(p <- simpleNetwork(up_down_df, height = "400px", 
+(p <- simpleNetwork(up_down_lsh, Source = "up", Target = "down", height = "400px", 
                     width = "400px", 
                     fontSize = 16, 
                     fontFamily = "serif",
@@ -154,36 +157,44 @@ up_down_df <-
 
 ```
 
-```{r}
+## Identify Termini
 
-# identify upstream ends
-# upstream ends are the places your paths stop
-# so to run the other direction (upstream --> downstream), you can change what is considered "upstream"
-# or reverse the `all_simple_paths` call below
-# this way of doing it uses the edge dataframe
-# but you can also specify your own upstream ends if you want to
-# and they don't have to be termini if you do that (e.g. you can stop mid-network)
-upstream_ends <- up_down_df %>%
+Need to update and identify the termini to create the "edges" of the network.
+
+### Upstream Ends
+
+We want to identify the upstream ends, which is where paths stop. To run the other direction (upstream --> downstream), we can change what is considered "upstream" or reverse the `all_simple_paths` call below.
+
+This way of doing it uses an edge data frame, but we could also specify upstream ends if needed, and they don't have to be termini (e.g. you can stop mid-network).
+
+```{r usends}
+
+# this identifies the upstream "ends" (termini)
+upstream_ends <- up_down_lsh %>%
   filter(!up %in% down) %>%
   pull(up) %>%
   unique()
+```
 
-# identify downstream ends
-# upstream ends are the places your paths stop
-# so to run the other direction (upstream --> downstream), you can change what is considered "downstream"
-# or reverse the `all_simple_paths` call below
-# this way of doing it uses the edge dataframe
-# but you can also specify your own downstream ends if you want to
-# and they don't have to be termini if you do that (e.g. you can start mid-network)
-downstream_ends <- up_down_df %>%
+### Downstream Ends
+
+Next we can identify downstream ends. The upstream ends are the places paths stop, so to run the other direction (upstream --> downstream), we can change  what is considered "downstream" or reverse the `all_simple_paths` call below. 
+
+```{r dsends}
+
+downstream_ends <- up_down_lsh %>%
   filter(!down %in% up) %>%
   pull(down) %>%
   unique()
+
 ```
 
-```{r}
+## Convert to Matrix
+
+```{r tomatrix}
+
 # turn edge dataframe into matrix for igraph conversion
-up_down_matrix <- up_down_df %>%
+up_down_matrix <- up_down_lsh %>%
   as.matrix()
 
 # convert edge matrix to igraph
