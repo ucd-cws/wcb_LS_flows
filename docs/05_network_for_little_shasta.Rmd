@@ -384,8 +384,9 @@ paths_df_clean <- unnest(paths_df, paths_lst) %>%
   unique() %>%
   mutate(downstream_end = str_sub(paths_chr, 1, 1),
          upstream_end = str_sub(paths_chr, -1, -1)) %>%
-  left_join(paths_df, by = "row_id") %>%
+  left_join(paths_df, by = "row_id") %>% 
   select(row_id, downstream_end, upstream_end, paths_chr, paths_lst)
+  
 ```
 
 ### Look at the Data
@@ -393,4 +394,6 @@ paths_df_clean <- unnest(paths_df, paths_lst) %>%
 ```{r cleandf}
 # take a look at the output dataframe
 DT::datatable(paths_df_clean)
+
+# write_csv(paths_df_clean, file = here("data_output/lshasta_hydroid_network.csv"))
 ```

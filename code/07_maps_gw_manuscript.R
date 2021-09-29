@@ -305,7 +305,13 @@ tmap_save(map_base, filename = "figs/map_of_h10_w_COMID_catch_w_LOIsegs.jpg", he
 # see
 #tmaptools::palette_explorer()
 #get_brewer_pal("Blues", n = 3, contrast = c(0.5, 0.8))
-
+library(randomcoloR)
+col4 <- randomcoloR::distinctColorPalette(k=4, runTsne = TRUE)
+colblind <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+              "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+pie(rep(1, 8), col = colblind)
+colblind4 <- c("#0072B2", "#009E73", "#F0E442", "#CC79A7")
+pie(rep(1, 4), col = colblind4)
 
 # LShasta map with DEM
 (loi_map <-
@@ -331,13 +337,15 @@ tmap_save(map_base, filename = "figs/map_of_h10_w_COMID_catch_w_LOIsegs.jpg", he
 
    # flowlines
    tm_shape(flowlines_map) +
-   tm_lines(col="strmtype", lwd="streamcalc", scale = 4, palette = "Dark2",
-            n = 4, contrast = c(0.3, 0.9),
-            legend.lwd.show = FALSE, legend.col.show = TRUE, title.col = "") +
+   tm_lines(col="strmtype", lwd="streamcalc", scale = 4,
+            # palette = "Dark2", n = 4, contrast = c(0.3, 0.9),
+            palette = colblind4,
+            legend.lwd.show = FALSE,
+            legend.col.show = TRUE, title.col = "") +
 
    tm_shape(flowlines_map) +
    tm_lines(col="darkblue", lwd=0.1, scale = 4, legend.lwd.show = FALSE) +
-   #tm_lines(col="darkblue", lwd="streamcalc", scale = 4, legend.lwd.show = FALSE) +
+   # tm_lines(col="darkblue", lwd="streamcalc", scale = 4, legend.lwd.show = FALSE) +
    #tm_shape(evans) + tm_lines(col="darkblue", lwd=0.5) +
 
    # flowlines shasta
@@ -375,7 +383,7 @@ tmap_save(map_base, filename = "figs/map_of_h10_w_COMID_catch_w_LOIsegs.jpg", he
              legend.show=TRUE, legend.outside = FALSE) +
    tm_layout(#title = "Little Shasta",
      frame = FALSE,
-     fontfamily = "Roboto Condensed",
+     #fontfamily = "Roboto Condensed",
      attr.outside = FALSE,
      inner.margins = c(0,0.01,0, 0.01), outer.margins = c(0.01,0.03, 0.01, 0.03)) +
    #legend.position = c(0.6,0.85),
@@ -426,10 +434,20 @@ loi_grob <- tmap_grob(loi_map)
 # simple
 (lsh_map <- ggdraw() +
   draw_plot(loi_grob) +
-  draw_plot(ca_grob,
+  draw_plot(ca_grob,scale = 0.8,
             width = 0.25, height = 0.27,
             x = -0.03, y = 0.6))
 
 # save
-ggsave(lsh_map, filename = "figs/map_of_loi_w_gdes_w_inset.jpg", width = 11, height = 8,
+ggsave(lsh_map, filename = "figs/map_of_loi_w_gdes_w_inset.jpg", width = 11, height = 8, scale = 1.1,
        dpi=300, units = "in")
+
+
+ggsave(lsh_map,
+       filename = "figs/map_of_loi_w_gdes_w_inset.pdf", width = 11, height = 8, scale = 1.1,
+       dpi=300, units = "in")
+
+tiff(filename="figs/map_of_loi_w_gdes_w_inset.tiff",
+     width = 11, height = 8, type="cairo", res=300, units = "in")
+lsh_map
+dev.off()
