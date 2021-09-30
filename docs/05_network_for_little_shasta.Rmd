@@ -397,3 +397,14 @@ DT::datatable(paths_df_clean)
 
 # write_csv(paths_df_clean, file = here("data_output/lshasta_hydroid_network.csv"))
 ```
+
+
+## to do
+
+ - make sure comid/hydroid assigned to each catchment correlates with the flowline network we want.
+ - ignore the isolated drainages and assign to the places we want them to join
+ - follow up and review the X-walk to see what variables we are missing
+ - create google sheet with Xwalk so collaboration w Ted can happen.
+ - add a column with potential calculation needed (i.e., mean, dominant, etc)
+ - start drafting code to run accumulation
+ 
