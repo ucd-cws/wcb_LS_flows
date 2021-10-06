@@ -35,6 +35,8 @@ load(here("data_output/06_catcharea_final_adjust.rda"))
 
 loi_comid <- df_da_final %>% filter(comid %in% c(3917946, 3917950, 3917198))
 
+# write_rds(loi_comid, file = "data_output/07_lshasta_loi_comids_flowline.rds")
+
 # reorder factors
 df_da_final$comid_f <- factor(as.character(df_da_final$comid),
                               levels=c(3917198, 3917200, 3917948,
