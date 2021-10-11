@@ -5,22 +5,60 @@ library(vroom)
 library(fs)
 library(glue)
 library(sf)
+library(here)
 library(mapview)
 mapviewOptions(fgb=FALSE)
 
-# Get Final Little Shasta COMIDs -------------------------------------------
+# FLOWLINES: Get Final Little Shasta FLOWLINE -------------------------------------------
 
-flowlines_final <- read_rds(file = "data_output/08_flowlines_final_lshasta.rds")
-flowlines_final <- flowlines_final %>%
+flowlines <- read_rds(here("data_output/final_flowlines_w_full_nhd_vaa.rds"))
+
+# reduce fields for plotting purposes
+flowlines_trim <- flowlines %>% select(id, comid, contains("seq"), hydroseq, gnis_name, areasqkm:divdasqkm, shape_length, streamorde, streamorder_map, streamcalc, geom)
+
+# fix flowlines comid to factor in correct order
+flowlines_trim <- flowlines_trim %>%
   mutate(comid_f = factor(as.character(comid),
                           levels=c(3917198, 3917200, 3917948,
-                                   3917950, 3917244, 3917946)))
+                                   3917950, 3917244, 3917946)),
+         comid_ff = as.factor(comid))
 
-catch_final <- read_rds(file = "data_output/08_catchments_final_lshasta.rds") %>%
-  mutate(upper = ifelse(is.na(upper), FALSE, upper))
+# drop sinks (isolated channels)
+sinks <- c(3917228, 3917212, 3917214, 3917218, 3917220,
+           3917960, 3917958, 3917276, 3917278, 3917274,
+           3917282, 3917284, 3917286, 3917280, 3917268,
+           3917256, 3917250, 3917272, 3917956)
 
-# n=52 unique COMIDs
-(coms <- unique(flowlines_final$comid))
+flowlines_trim <- flowlines_trim %>%
+  filter(!comid %in% sinks)
+
+# preview
+mapview(flowlines_trim, zcol="comid_ff", legend=FALSE)
+
+
+# Get CATCHMENTS ----------------------------------------------------------
+
+# updated catchment areas # catch_final, df_catch_diss, df_da_final, df_coms (all attribs, n=142)
+# load(here("data_output/06_catcharea_final_adjust.rda"))
+#
+# rm(df_catch_rev, df_catch_diss, df_da_final)
+#
+# # make comid char for plotting
+# catch_final <- catch_final %>%
+#   mutate(comid_c = as.factor(comid),
+#          upper = if_else(is.na(comid_f), TRUE, FALSE))
+#
+# # save out
+# write_rds(catch_final, "data_output/08_catch_final_lshasta.rds")
+
+catch_final <- read_rds("data_output/08_catch_final_lshasta.rds")
+
+mapview(flowlines_trim,  zcol="comid_ff", legend=FALSE) +
+  mapview(catch_final, zcol="comid_c", legend=FALSE)
+
+# n=33 unique COMIDs
+(coms <- unique(flowlines_trim$comid))
+
 
 # Set up Directories & Files ----------------------------------------------
 

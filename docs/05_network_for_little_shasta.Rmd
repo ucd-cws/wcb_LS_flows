@@ -190,8 +190,8 @@ sinks <- c(3917228, 3917212, 3917214, 3917218, 3917220,
            3917282, 3917284, 3917286, 3917280, 3917268,
            3917256, 3917250, 3917272, 3917956)
 
-flowlines_map_trim <- flowlines_map #%>% 
-  #filter(!comid %in% sinks)
+flowlines_map_trim <- flowlines_map %>% 
+  filter(!comid %in% sinks)
 
 mapview(flowlines_map_trim)
 
