@@ -392,6 +392,10 @@ paths_df_clean <- unnest(paths_df, paths_lst) %>%
 ### Look at the Data
 
 ```{r cleandf}
+
+# add most upstream id
+paths_df_clean$us_hydroid <- unlist(map_depth(paths_df_clean$paths_lst, 1, ~tail(.x, 1)))
+
 # take a look at the output dataframe
 DT::datatable(paths_df_clean)
 
