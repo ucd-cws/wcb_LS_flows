@@ -119,8 +119,6 @@ loi_pts <- st_point_on_surface(loi_comid) %>%
     comid_f=="3917950" ~ "LOI-2",
     comid_f=="3917198" ~ "LOI-3"
   ))
-mapview(loi_comid) + mapview(loi_pts, zcol="loi_id")
-
 
 # Raster Data -------------------------------------------------------------
 
@@ -129,172 +127,36 @@ lsh_dem <- stars::read_stars("data/lshasta_dem.tif") # raster DEM
 load("data_output/tmaptools_h10_osm_natgeo.rda") # topo base layer
 tmap_options(max.raster = c(plot=1e6, view=1e6))
 
-#gm_osm <- read_osm(h10, type = "esri-topo", raster=TRUE)
+#gm_osm <- read_osm(h10_ls, type = "esri-topo", raster=TRUE, zoom = 12)
 #save(gm_osm, file = "data_output/tmaptools_h10_osm_natgeo.rda")
 #load("data_output/tmaptools_h10_osm_natgeo.rda")
+#tmap_options(max.raster = c(plot=1e6, view=1e6))
+tm_shape(gm_osm) + tm_rgb()
 
 
-# Mapview Preview ---------------------------------------------------------
+# Get NLCD ----------------------------------------------------------------
 
+# devtools::install_github("ropensci/FedData")
+library(FedData)
 
-# look at hydroseq
-flowlines_map %>% mutate(hydroseq_f = as.factor(hydroseq)) %>%
-mapview(., zcol="hydroseq", legend=T, lwd=2) +
-  mapview(catch_final, zcol="comid_ff", alpha.regions=0.2, legend=FALSE, lwd=0.2)
+nlcd <- get_nlcd(template = h10_ls, label = "lshasta",
+                 extraction.dir = "data/nlcd")
+plot(nlcd)
 
+# crop
+library(stars)
+nlcd_st <- read_stars("data/nlcd/lshasta_NLCD_Land_Cover_2019.tif")
+st_crs(nlcd_st)
+h10_ls_crop <- st_transform(h10_ls, st_crs(nlcd_st))
+st_crs(nlcd_st) == st_crs(h10_ls_crop)
+nlcd_crop <- st_crop(nlcd_st, h10_ls_crop)
 
-flowlines_map %>%
-  #mutate(uphydroseq = as.factor(uphydroseq)) %>%
-  mapview(., zcol="uphydroseq", legend=T, lwd=2)
+plot(nlcd_crop)
 
-flowlines_map %>%
-  mapview(., zcol="dnhydroseq", legend=T, lwd=2) +
-  mapview(catch_final, zcol="comid_ff", alpha.regions=0.2, legend=FALSE, lwd=0.2)
-
-# Static Map --------------------------------------------------------------
-
-## GOT WEIRD ERROR, see here: https://github.com/mtennekes/tmap/issues/551
-## updating to dev version which
-# remotes::install_github("mtennekes/tmap")
-# remotes::install_github("mtennekes/tmaptools")
-
-
-## DEM MAP -----------------------------------------------------------------
-
-# LShasta map with DEM
-(map_base <-
-    # baselayer
-    tm_shape(gm_osm) + tm_rgb() +
-    # DEM raster
-    tm_shape(lsh_dem[1],) + tm_raster(palette="viridis", alpha = 0.5, title = "DEM (m)") +
-    # subcatchments
-    tm_shape(catch_final) +
-    tm_polygons(border.col="white", alpha = 0, border.alpha = 0.9, lwd=0.3, lty=2) +
-    # HUC10 boundary
-    tm_shape(h10_ls) +
-    tm_polygons(border.col="gray30", alpha = 0, lwd=3) +
-    # flowlines
-    tm_shape(flowlines_map) + tm_lines(col="darkblue", lwd="streamcalc", scale = 2.25, legend.lwd.show = FALSE) +
-    tm_shape(evans) + tm_lines(col="darkblue", lwd=0.5) +
-
-    # springs
-    tm_shape(lsh_springs) +
-    tm_dots(col="skyblue", size = 1, title = "Springs", legend.show = TRUE, shape = 21) +
-    tm_shape(lsh_springs[c(1,2),]) +
-    tm_text("Name", auto.placement = TRUE, just = "bottom", ymod = -1.5, xmod=1.5, shadow = TRUE)+
-    # gages
-    tm_shape(gages) +
-    tm_dots(col="darkblue", size = 1.2, title = "Gages", legend.show = TRUE, shape = 22) +
-    tm_text("site_number", fontface = "bold", auto.placement = TRUE,
-            just = "left", ymod = 1.5, xmod=0.6, shadow = TRUE)+
-
-    # layout
-    tm_layout(frame=FALSE) +
-    tm_layout(title = "Little Shasta",
-              frame = FALSE,
-              fontfamily = "Roboto Condensed",
-              legend.outside = FALSE, attr.outside = FALSE,
-              inner.margins = 0.01, outer.margins = (0.01),
-              #legend.position = c(0.6,0.85),
-              title.position = c(0.7, 0.95)) +
-    tm_compass(type = "4star", position = c("left","bottom")) +
-    tm_scale_bar(position = c("left","bottom")))
-
-# save
-#tmap_save(map_base, filename = "figs/map_of_h10_w_dem_overlay.jpg", height = 8.5, width = 11, units = "in", dpi = 300)
-
-
-# BASE LAYER CATCH MAP ----------------------------------------------------
-
-# LShasta map with DEM
-(map_base <-
-   # baselayer
-   tm_shape(gm_osm) + tm_rgb() +
-   # adjusted/revised catchments
-   tm_shape(df_catch_diss) +
-   tm_fill(col = "comid_f", alpha = 0.5, title = "Catchment COMID") +
-    # subcatchments: all in white
-    tm_shape(catch_final) +
-    tm_polygons(border.col="gray10", alpha = 0, border.alpha = 0.9, lwd=0.3, lty=2) +
-    # HUC10 boundary
-   tm_shape(h10_ls) +
-   tm_polygons(border.col="gray30", alpha = 0, lwd=3) +
-   # flowlines
-   tm_shape(flowlines_map) + tm_lines(col="darkblue", lwd="streamcalc", scale = 4, legend.lwd.show = FALSE) +
-   tm_shape(evans) + tm_lines(col="darkblue", lwd=0.5) +
-    # springs
-    tm_shape(lsh_springs) +
-    tm_dots(col="skyblue", size = 1, title = "Springs", legend.show = TRUE, shape = 21) +
-    tm_shape(lsh_springs[c(1,2),]) +
-    tm_text("Name", auto.placement = TRUE, just = "bottom", ymod = -1, xmod=2, shadow = TRUE)+
-    # gages
-    tm_shape(gages) +
-    tm_dots(col="darkblue", size = 1.2, title = "Gages", legend.show = TRUE, shape = 22) +
-    tm_text("site_number", fontface = "bold", auto.placement = TRUE,
-            just = "left", ymod = 1.8, xmod=0.6, shadow = TRUE)+
-
-   # layout
-   tm_layout(frame=FALSE) +
-   tm_layout(title = "Little Shasta",
-             frame = FALSE,
-             fontfamily = "Roboto Condensed",
-             legend.outside = FALSE, attr.outside = FALSE,
-             inner.margins = 0.01, outer.margins = (0.01),
-             #legend.position = c(0.6,0.85),
-             title.position = c(0.7, 0.95)) +
-   tm_compass(type = "4star", position = c("left","bottom")) +
-   tm_scale_bar(position = c("left","bottom")))
-
-# save
-#tmap_save(map_base, filename = "figs/map_of_h10_w_COMID_catch_revised.jpg", height = 8.5, width = 11, units = "in", dpi = 300)
-
-# BASE LAYER AOI MAP ----------------------------------------------------
-
-# LShasta map with DEM
-(map_base <-
-   # baselayer
-   tm_shape(gm_osm) + tm_rgb() +
-   # adjusted/revised catchments
-   tm_shape(df_catch_diss) +
-   tm_fill(col = "comid_f", alpha = 0.5, title = "Catchment COMID") +
-    # subcatchments: all in white
-    tm_shape(catch_final) +
-    tm_polygons(border.col="gray10", alpha = 0, border.alpha = 0.9, lwd=0.3, lty=2) +
-    # HUC10 boundary
-   tm_shape(h10_ls) +
-   tm_polygons(border.col="gray30", alpha = 0, lwd=3) +
-   # flowlines
-   tm_shape(flowlines_map) + tm_lines(col="darkblue", lwd="streamcalc", scale = 4, legend.lwd.show = FALSE) +
-   tm_shape(evans) + tm_lines(col="darkblue", lwd=0.5) +
-    # springs
-    tm_shape(lsh_springs) +
-    tm_dots(col="skyblue", size = 1, title = "Springs", legend.show = TRUE, shape = 21) +
-    tm_shape(lsh_springs[c(1,2),]) +
-    tm_text("Name", auto.placement = TRUE, just = "bottom", ymod = -1, xmod=2, shadow = TRUE)+
-    # gages
-    tm_shape(gages) +
-    tm_dots(col="darkblue", size = 0.8, title = "Gages", legend.show = TRUE, shape = 22) +
-    tm_text("site_number", fontface = "bold", auto.placement = TRUE,
-            just = "left", ymod = 1.8, xmod=0.6, shadow = TRUE) +
-    # AOI lines
-    tm_shape(loi_comid) + tm_lines(col="coral1", lwd=4) +
-
-   # layout
-   tm_layout(frame=FALSE) +
-   tm_layout(title = "Little Shasta",
-             frame = FALSE,
-             fontfamily = "Roboto Condensed",
-             legend.outside = FALSE, attr.outside = FALSE,
-             inner.margins = 0.01, outer.margins = (0.01),
-             #legend.position = c(0.6,0.85),
-             title.position = c(0.7, 0.95)) +
-   tm_compass(type = "4star", position = c("left","bottom")) +
-   tm_scale_bar(position = c("left","bottom")))
-
-# save
-tmap_save(map_base, filename = "figs/map_of_h10_w_COMID_catch_w_LOIsegs.jpg", height = 8.5, width = 11, units = "in", dpi = 300)
-
-
+tm_shape(gm_osm) + tm_rgb() +
+  tm_shape(nlcd_crop) + tm_raster(alpha = 1) +
+  tm_shape(h10_ls) +
+  tm_polygons(border.col="gray30", alpha = 0, lwd=3)
 
 # GDE w springs -----------------------------------------------------------
 
@@ -316,9 +178,9 @@ pie(rep(1, 4), col = colblind4)
    # adjusted/revised catchments
    # tm_shape(df_catch_diss) +
    # tm_fill(col = "comid_f", alpha = 0.3, title = "Catchment COMID", legend.show = TRUE) +
-   # subcatchments: all in white
-   tm_shape(catch_final) +
-   tm_polygons(border.col="gray10", alpha = 0, border.alpha = 0.9, lwd=0.2, lty=2) +
+   # subcatchments: all in gray dashed
+  # tm_shape(catch_final) +
+   #tm_polygons(border.col="gray10", alpha = 0, border.alpha = 0.9, lwd=0.2, lty=2) +
    # HUC10 boundary
    tm_shape(h10_ls) +
    tm_polygons(border.col="gray30", alpha = 0, lwd=3) +
