@@ -3,7 +3,7 @@
 # Libraries ---------------------------------------------------------------
 
 library(sf)
-library(dplyr)
+library(dplyr, warn.conflicts = FALSE)
 library(readr)
 library(ggplot2)
 #library(tidyverse)
@@ -131,7 +131,7 @@ tmap_options(max.raster = c(plot=1e6, view=1e6))
 #save(gm_osm, file = "data_output/tmaptools_h10_osm_natgeo.rda")
 #load("data_output/tmaptools_h10_osm_natgeo.rda")
 #tmap_options(max.raster = c(plot=1e6, view=1e6))
-tm_shape(gm_osm) + tm_rgb()
+#tm_shape(gm_osm) + tm_rgb()
 
 
 # Get NLCD ----------------------------------------------------------------
@@ -186,7 +186,7 @@ nlcd_labs
 lsh_nlcd_prop <- left_join(lc_prop, nlcd_labs, by=c("ID")) %>%
    arrange(Prcnt)
 
-View(lsh_nlcd_prop, title = "v2")
+#View(lsh_nlcd_prop, title = "v2")
 
 # GDE w springs -----------------------------------------------------------
 
@@ -325,8 +325,13 @@ loi_grob <- tmap_grob(loi_map)
             width = 0.25, height = 0.27,
             x = 0, y = 0.7))
 
-cowplot::save_plot(lsh_map, filename = "figs/map_of_loi_w_gdes_w_inset.jpg",
+cowplot::save_plot(lsh_map, filename = "figs/map_lsh_of_loi_w_gdes_w_inset.jpg",
                    base_height = 6, base_width = 11)
+cowplot::save_plot(lsh_map, filename = "figs/map_lsh_of_loi_w_gdes_w_inset.pdf",
+                   base_height = 6, base_width = 11)
+cowplot::save_plot(lsh_map, filename = "figs/map_lsh_of_loi_w_gdes_w_inset.tiff",
+                   base_height = 6, base_width = 11)
+
 
 # save
 # ggsave(lsh_map, filename = "figs/map_of_loi_w_gdes_w_inset.jpg",
