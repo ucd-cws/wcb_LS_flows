@@ -141,7 +141,7 @@ library(FedData)
 
 nlcd <- get_nlcd(template = h10_ls, label = "lshasta",
                  extraction.dir = "data/nlcd")
-plot(nlcd)
+unique(getValues(nlcd))
 
 # crop
 library(stars)
@@ -151,12 +151,42 @@ h10_ls_crop <- st_transform(h10_ls, st_crs(nlcd_st))
 st_crs(nlcd_st) == st_crs(h10_ls_crop)
 nlcd_crop <- st_crop(nlcd_st, h10_ls_crop)
 
-plot(nlcd_crop)
+# plot
+tm_shape(nlcd_crop) + tm_raster(title = "2019 NLCD") +
+   tm_shape(h10_ls) +
+   tm_polygons(border.col="gray30", alpha = 0, lwd=3) +
+   tm_legend(frame=FALSE,
+             legend.text.size=0.8, legend.position=c(0.01,0.03),
+             legend.show=TRUE, legend.outside = FALSE) +
+   tm_compass(type = "4star", position = c(0.82, 0.12), text.size = 0.5) +
+   tm_scale_bar(position = c(0.77,0.05), breaks = c(0,2.5,5),
+                text.size = 0.6)
 
-tm_shape(gm_osm) + tm_rgb() +
-  tm_shape(nlcd_crop) + tm_raster(alpha = 1) +
-  tm_shape(h10_ls) +
-  tm_polygons(border.col="gray30", alpha = 0, lwd=3)
+tmap_save(filename = "figs/map_nlcd_2019_lshasta.png", dpi=300,
+       width = 11, height = 8)
+
+# summarize by watershed
+library(raster)
+
+e <- extract(nlcd, h10_ls_crop, method="simple")
+lc_counts <- lapply(e, table)
+lc_prop <- lapply(e, FUN=function(x){prop.table(table(x))}) %>% as.data.frame() %>%
+   dplyr::rename(ID = x, Prcnt = Freq) %>%
+   mutate(ID = as.numeric(as.character(ID)),
+          Prcnt = Prcnt*100)
+lc_prop
+
+# add the labels
+nlcd_labs <- as.data.frame(nlcd@data@attributes[[1]]) %>%
+   filter(category!="") %>%
+   mutate(category = as.character(category))
+nlcd_labs
+
+# join
+lsh_nlcd_prop <- left_join(lc_prop, nlcd_labs, by=c("ID")) %>%
+   arrange(Prcnt)
+
+View(lsh_nlcd_prop, title = "v2")
 
 # GDE w springs -----------------------------------------------------------
 
@@ -167,9 +197,9 @@ library(randomcoloR)
 col4 <- randomcoloR::distinctColorPalette(k=4, runTsne = TRUE)
 colblind <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
               "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-pie(rep(1, 8), col = colblind)
+#pie(rep(1, 8), col = colblind)
 colblind4 <- c("#0072B2", "#009E73", "#F0E442", "#CC79A7")
-pie(rep(1, 4), col = colblind4)
+#pie(rep(1, 4), col = colblind4)
 
 # LShasta map with DEM
 (loi_map <-
@@ -190,8 +220,8 @@ pie(rep(1, 4), col = colblind4)
    tm_fill(col = "aquamarine3", alpha = 0.8, title = "GDE", legend.show = TRUE) +
    tm_shape(gde_wet_lsh) +
    tm_fill(col = "aquamarine3", alpha = 0.8, title = "GDE", legend.show = TRUE) +
-   tm_add_legend('fill', col='aquamarine3', border.col='black', size=1,
-                 labels=c(' GDE')) +
+   tm_add_legend('fill', col=c('aquamarine3', 'seashell', 'darkseagreen3'), border.col='black', size=1,
+                 labels=c(' GDE', " Private Land", " US Forest Service")) +
 
    # flowlines
    tm_shape(flowlines_map) +
@@ -237,17 +267,17 @@ pie(rep(1, 4), col = colblind4)
 
 
    # layout
-   tm_legend(bg.color="white", frame=FALSE, legend.text.size=0.8, legend.position=c(0.82,0.05),
+   tm_legend(bg.color="white", frame=TRUE, legend.text.size=0.8, legend.position=c(0.82,0.05),
              legend.show=TRUE, legend.outside = FALSE) +
    tm_layout(#title = "Little Shasta",
      frame = FALSE,
      #fontfamily = "Roboto Condensed",
-     attr.outside = FALSE,
-     inner.margins = c(0,0.01,0, 0.01), outer.margins = c(0.01,0.03, 0.01, 0.03)) +
+     attr.outside = FALSE)+
+     #outer.margins = c(0.03,0.03, 0.03, 0.03)) +
    #legend.position = c(0.6,0.85),
    #title.position = c(0.7, 0.95)) +
    tm_compass(type = "4star", position = c(0.12, 0.12), text.size = 0.5) +
-   tm_scale_bar(position = c(0.05,0.05), breaks = c(0,2.5,5,10),
+   tm_scale_bar(position = c(0.05,0.05), breaks = c(0,2.5,5),
                 text.size = 0.6))
 
 # save
@@ -281,7 +311,7 @@ shasta <- st_read("data/shps/ShastaRwatershed.shp")
   tm_shape(shasta_main) + tm_lines(col = "darkblue", lwd=0.5, scale = 1) +
   tm_layout(frame=TRUE))
 
-tmap_save(inset_ca, filename = "figs/inset_map.jpg", height = 3, width = 2.5, units = "in", dpi = 300)
+#tmap_save(inset_ca, filename = "figs/inset_map.jpg", height = 3, width = 2.5, units = "in", dpi = 300)
 
 
 # make grobs
@@ -290,21 +320,24 @@ ca_grob <- tmap_grob(inset_ca)
 loi_grob <- tmap_grob(loi_map)
 
 # simple
-(lsh_map <- ggdraw() +
-  draw_plot(loi_grob) +
+(lsh_map <- ggdraw(loi_grob) +
   draw_plot(ca_grob,scale = 0.8,
             width = 0.25, height = 0.27,
-            x = -0.03, y = 0.6))
+            x = 0, y = 0.7))
+
+cowplot::save_plot(lsh_map, filename = "figs/map_of_loi_w_gdes_w_inset.jpg",
+                   base_height = 6, base_width = 11)
 
 # save
-ggsave(lsh_map, filename = "figs/map_of_loi_w_gdes_w_inset.jpg", width = 11, height = 8, scale = 1.1,
-       dpi=300, units = "in")
-
+# ggsave(lsh_map, filename = "figs/map_of_loi_w_gdes_w_inset.jpg",
+#        width = 11, height = 7, scale = 1.1,
+#        dpi=300, units = "in")
 
 ggsave(lsh_map,
-       filename = "figs/map_of_loi_w_gdes_w_inset.pdf", width = 11, height = 8, scale = 1.1,
+       filename = "figs/map_of_loi_w_gdes_w_inset.pdf", width = 11, height = 6, scale = 1.1,
        dpi=300, units = "in")
 
+# tiff
 tiff(filename="figs/map_of_loi_w_gdes_w_inset.tiff",
      width = 11, height = 8, type="cairo", res=300, units = "in")
 lsh_map
