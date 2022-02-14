@@ -23,7 +23,14 @@ DB <- "data_output/cosumnes_map.gpkg"
 st_layers(db)
 st_layers(DB)
 
-loi <- st_read(DB, "cos_loi")
+loi <- st_read(DB, "cos_loi") %>%
+   # fix the names that are reversed
+   mutate(LOI = case_when(
+      grepl("11336000", SITE_NO) ~ "LOI 2 (McConnell)",
+      grepl("11335000", SITE_NO) ~ "LOI 1 (Michigan Bar)",
+   ))
+loi %>% select(SITE_NO, STATION_NM, LOI) %>% View() # check!
+
 huc8 <- st_read(DB, "cos_huc8")
 
 cos_nhd_us_main <- st_read(DB,
@@ -241,10 +248,12 @@ pie(rep(1, 2), col = colblind2)
                  labels=c(' Location of Interest')) +
 
    # layout
-   tm_legend(bg.color="white", frame=TRUE, legend.text.size=0.8, legend.position=c(0.82,0.05),
+   tm_legend(bg.color="white", frame=TRUE,
+             legend.position=c(0.8,0.05),
              legend.show=TRUE, legend.outside = FALSE) +
    tm_layout(#title = "Little Shasta",
      frame = FALSE,
+     legend.width=0.5, legend.text.size=0.8,
      #fontfamily = "Roboto Condensed",
      attr.outside = FALSE,
      inner.margins = c(0.01,0.01,0.01, 0.01),
@@ -290,22 +299,16 @@ loi_grob <- tmap_grob(loi_map)
             width = 0.25, height = 0.27,
             x = -0.03, y = 0.6))
 
-cowplot::save_plot(lsh_map, filename = "figs/map_cos_of_loi_w_gdes_w_inset.jpg",
-                   base_height = 6, base_width = 11)
-cowplot::save_plot(lsh_map, filename = "figs/map_cos_of_loi_w_gdes_w_inset.pdf",
-                   base_height = 6, base_width = 11)
-cowplot::save_plot(lsh_map, filename = "figs/map_cos_of_loi_w_gdes_w_inset.tiff",
-                   base_height = 6, base_width = 11)
-# save
-ggsave(lsh_map, filename = "figs/map_of_loi_w_gdes_w_inset_cos.jpg", width = 11, height = 8, scale = 1.1,
-       dpi=300, units = "in")
+# cowplot save: shrinks legend?
+cowplot::save_plot(lsh_map, filename = "figs/map_cos_cow_loi_w_gdes_w_inset.tiff",
+                   base_height = 7.5, base_width = 11.5)
 
+# ggplot save: shrinks width?
+# ggsave(lsh_map, filename = "figs/map_cos_gg_loi_w_gdes_w_inset.jpg", width = 11.5, height = 7.5, scale = 1.1,
+#        dpi=300, units = "in")
 
-ggsave(lsh_map,
-       filename = "figs/map_of_loi_w_gdes_w_inset_cos.pdf", width = 11, height = 8, scale = 1.1,
-       dpi=300, units = "in")
-
-tiff(filename="figs/map_of_loi_w_gdes_w_inset_cos.tiff",
-     width = 11, height = 8, type="cairo", res=300, units = "in")
-lsh_map
-dev.off()
+# manual
+# tiff(filename="figs/map_of_loi_w_gdes_w_inset_cos.tiff",
+#      width = 11, height = 7.5, type="cairo", res=300, units = "in")
+# lsh_map
+# dev.off()
