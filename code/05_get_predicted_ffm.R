@@ -4,36 +4,41 @@
 # Libraries ---------------------------------------------------------------
 
 library(tidyverse)
+# install from a specific branch
+#library(remotes)
+remotes::install_github("ceff-tech/ffc_api_client/ffcAPIClient#74")
+# devtools::install_github('ceff-tech/ffc_api_client/ffcAPIClient')
 library(ffcAPIClient)
 library(mapview)
 mapviewOptions(fgb = FALSE)
 
 
 # Load Data ---------------------------------------------------------------
-
-load("data_output/little_shasta_catchment_flowlines.rda")
-
-# mapview
-(m1 <- mapview(evans, color="steelblue") +
-    mapview(lsh_springs, col.regions="skyblue") +
-    mapview(flowlines, zcol="streamorde") +
-    mapview(h10, color="darkblue", lwd=2, alpha.regions=0))
-
-# Select the Lower COMIDs -------------------------------------------------
-
-library(mapedit)
-
-# select COMIDs
-comids <- selectFeatures(flowlines, map = m1@map, mode = "draw")
-
-# filter
-df_coms <- comids %>% select(-edit_id) %>%
-  mutate(comid_f=as.factor(comid))
-
-# mapview
-mapview(df_coms, zcol="comid_f", lwd=4) + mapview(flowlines, color="cyan4", lwd=0.5)
-
-save(df_coms, file="data_output/05_selected_comids_AOI.rda")
+#
+# load("data_output/little_shasta_catchment_flowlines.rda")
+#
+# # mapview
+# (m1 <- mapview(evans, color="steelblue") +
+#     mapview(lsh_springs, col.regions="skyblue") +
+#     mapview(flowlines, zcol="comid"))
+#     #mapview(flowlines, zcol="streamorde"))
+#     #mapview(h10, color="darkblue", lwd=2, alpha.regions=0))
+#
+# # Select the Lower COMIDs -------------------------------------------------
+#
+# library(mapedit)
+#
+# # select COMIDs
+# comids <- selectFeatures(flowlines, map = m1@map, mode = "draw")
+#
+# # filter
+# df_coms <- comids %>% select(-edit_id) %>%
+#   mutate(comid_f=as.factor(comid))
+#
+# # mapview
+# mapview(df_coms, zcol="comid_f", lwd=4) + mapview(flowlines, color="cyan4", lwd=0.5)
+#
+# save(df_coms, file="data_output/05_selected_comids_AOI.rda")
 
 # Now pull predictions ----------------------------------------------------
 
@@ -42,12 +47,12 @@ load("data_output/05_selected_comids_AOI.rda")
 library(ffcAPIClient)
 library(purrr)
 
-ffctoken <- set_token(Sys.getenv("EFLOWS", ""))
+ffctoken <- set_token(Sys.getenv("EFLOWS_WEBSITE_TOKEN"))
 ffcAPIClient::clean_account(ffctoken)
-
+tst <- get_predicted_flow_metrics("8211251", online = F)
 # make a list of comids
 coms <- df_coms$comid
-com_predictions <- map(coms, ~get_predicted_flow_metrics(.x))
+com_predictions <- map(coms, ~get_predicted_flow_metrics(.x, online = TRUE, wyt = "any"))
 
 # combine
 lshasta_ffc_preds <- com_predictions %>% bind_rows() %>% arrange(metric)
